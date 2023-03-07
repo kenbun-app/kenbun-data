@@ -26,7 +26,7 @@ class BaseModel(_BaseModel):
 
     class Config:
         allow_mutation = False
-        alias_generator = Camelizer(["url", "ip"])
+        alias_generator = Camelizer(["url", "ip", "id"])
         allow_population_by_field_name = True
 
     def dict(
@@ -43,15 +43,16 @@ class BaseModel(_BaseModel):
         """serialize returns a dict representation of the model.
         >>> from unittest.mock import patch
         >>> class MyModel(BaseModel):
+        ...     friend_id: Id
         ...     name: str
         ...     base_url: str
         ...     two_words: str
         ...
         >>> with patch.object(MyModel.__fields__["id"], "default_factory", return_value=Id("T3HW7dZ5SjCtODQLQkY8eA")):
-        ...     MyModel(name="kenbun", base_url="https://kenbun.app", two_words="aaa").dict()
+        ...     MyModel(friend_id=Id("fLb3LTy4RsOADmV1rkR2pA"), name="kenbun", base_url="https://kenbun.app", two_words="aaa").dict()
         ...
-        {'id': Id('T3HW7dZ5SjCtODQLQkY8eA'), 'name': 'kenbun', 'baseURL': 'https://kenbun.app', 'twoWords': 'aaa'}
-        """
+        {'id': Id('T3HW7dZ5SjCtODQLQkY8eA'), 'friendID': Id('fLb3LTy4RsOADmV1rkR2pA'), 'name': 'kenbun', 'baseURL': 'https://kenbun.app', 'twoWords': 'aaa'}
+        """  # noqa: E501
         return super(BaseModel, self).dict(
             include=include,
             exclude=exclude,
