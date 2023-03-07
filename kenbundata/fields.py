@@ -1,5 +1,7 @@
 import uuid
 from base64 import urlsafe_b64decode, urlsafe_b64encode
+from datetime import datetime as _datetime
+from datetime import timezone as _timezone
 from typing import Union
 from uuid import UUID
 
@@ -51,3 +53,81 @@ class Id(UUID):
 
     def __str__(self) -> str:
         return self.b64encoded
+
+
+class Timestamp(int):
+    """
+    Timestamp class
+    >>> a = Timestamp(1674397764479000)
+    >>> a
+    Timestamp(1674397764479000)
+    >>> a.milliseconds
+    1674397764479
+    >>> a.microseconds
+    1674397764479000
+    >>> a.datetime
+    datetime.datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=datetime.timezone.utc)
+    >>> dt = a.datetime
+    >>> Timestamp.from_datetime(dt)
+    Timestamp(1674397764479000)
+    >>> ts = dt.timestamp()
+    >>> Timestamp.from_float(ts)
+    Timestamp(1674397764479000)
+    """
+
+    @property
+    def milliseconds(self) -> int:
+        """
+        >>> a = Timestamp(1674365364479000)
+        >>> a.milliseconds
+        1674365364479
+        """
+        return int(self // 1000)
+
+    @property
+    def microseconds(self) -> int:
+        """
+        >>> a = Timestamp(1674365364479000)
+        >>> a.microseconds
+        1674365364479000
+        """
+        return int(self)
+
+    @property
+    def datetime(self) -> _datetime:
+        """
+        >>> a = Timestamp(1674397764479000)
+        >>> a.datetime
+        datetime.datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=datetime.timezone.utc)
+        """
+        return _datetime.fromtimestamp(self / 1000000, tz=_timezone.utc)
+
+    @classmethod
+    def from_datetime(cls, dt: _datetime) -> "Timestamp":
+        """
+        >>> Timestamp.from_datetime(_datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=_timezone.utc))
+        Timestamp(1674397764479000)
+        """
+        return cls.from_float(dt.timestamp())
+
+    @classmethod
+    def from_float(cls, f: float) -> "Timestamp":
+        """
+        >>> Timestamp.from_datetime(_datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=_timezone.utc))
+        Timestamp(1674397764479000)
+        """
+        return cls(int(f * 1000000))
+
+    @classmethod
+    def now(cls) -> "Timestamp":
+        """
+        >>> import freezegun
+        >>> from datetime import timedelta, timezone
+        >>> with freezegun.freeze_time(_datetime(2023, 1, 22, 14, 29, 23, 123321, tzinfo=_timezone.utc)):
+        ...     Timestamp.now()
+        Timestamp(1674397763123321)
+        """
+        return cls.from_datetime(_datetime.utcnow())
+
+    def __repr__(self) -> str:
+        return f"Timestamp({super(Timestamp, self).__repr__()})"
