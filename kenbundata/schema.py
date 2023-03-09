@@ -69,9 +69,13 @@ class Url(BaseModel):
     """Data model represents URL
     >>> from unittest.mock import patch
     >>> with patch.object(Url.__fields__["id"], "default_factory", return_value=Id("zegKeMRzTSux24g3kzp6nw")):
-    ...     Url(url="https://kenbun.app")
+    ...     x = Url(url="https://kenbun.app")
     ...
+    >>> x
     Url(id=Id('zegKeMRzTSux24g3kzp6nw'), url=AnyHttpUrl('https://kenbun.app', ))
+    >>> from .encoders import KenbunEncoder
+    >>> KenbunEncoder().encode(x)
+    '{"id": "zegKeMRzTSux24g3kzp6nw", "url": "https://kenbun.app"}'
     """
 
     url: AnyHttpUrl

@@ -1,5 +1,5 @@
 import uuid
-from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
+from base64 import b64decode, b64encode, urlsafe_b64decode, urlsafe_b64encode
 from collections.abc import Callable, Generator
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
@@ -181,11 +181,11 @@ class MimeType(str, Enum):
 
 
 class Bytes(bytes):
-    """
+    r"""
     >>> Bytes(b"hello")
     Bytes(b'hello')
-    >>> Bytes("全")
-    Bytes(b'\\xe5\\x85\\xa8')
+    >>> Bytes("aGVsbG8=")
+    Bytes(b'hello')
     >>> Bytes(123)
     Bytes(b'{')
     >>> Bytes(b"hello").hex()
@@ -200,7 +200,7 @@ class Bytes(bytes):
         if isinstance(value, bytes):
             return super(Bytes, cls).__new__(cls, value)
         if isinstance(value, str):
-            return super(Bytes, cls).__new__(cls, value.encode("utf-8"))
+            return super(Bytes, cls).__new__(cls, b64decode(value))
         if isinstance(value, int):
             return super(Bytes, cls).__new__(cls, value.to_bytes((value.bit_length() + 7) // 8, "big"))
         raise ValueError(f"Cannot create Bytes from {value}")
