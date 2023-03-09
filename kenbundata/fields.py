@@ -1,9 +1,10 @@
 import uuid
-from base64 import urlsafe_b64decode, urlsafe_b64encode
+from base64 import b64encode, urlsafe_b64decode, urlsafe_b64encode
+from collections.abc import Callable, Generator
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
 from enum import Enum
-from typing import Union
+from typing import Any, Union
 from uuid import UUID
 
 
@@ -150,6 +151,10 @@ class MimeType(str, Enum):
     'txt'
     >>> MimeType("application/octet-stream").extension
     'bin'
+    >>> MimeType("nonsuch/mimetype")
+    Traceback (most recent call last):
+        ...
+    ValueError: 'nonsuch/mimetype' is not a valid MimeType
     """
 
     application_json = "application/json"
@@ -173,3 +178,50 @@ class MimeType(str, Enum):
     @property
     def extension(self) -> str:
         return {"text/plain": "txt", "application/octet-stream": "bin"}.get(self.value, self.value.split("/")[-1])
+
+
+class Bytes(bytes):
+    """
+    >>> Bytes(b"hello")
+    Bytes(b'hello')
+    >>> Bytes("全")
+    Bytes(b'\\xe5\\x85\\xa8')
+    >>> Bytes(123)
+    Bytes(b'{')
+    >>> Bytes(b"hello").hex()
+    '68656c6c6f'
+    >>> Bytes(b"hello").b64encoded
+    'aGVsbG8='
+    >>> Bytes(b"hello").b64urlencoded
+    'aGVsbG8='
+    """
+
+    def __new__(cls, value: Union[bytes, str, int]) -> "Bytes":
+        if isinstance(value, bytes):
+            return super(Bytes, cls).__new__(cls, value)
+        if isinstance(value, str):
+            return super(Bytes, cls).__new__(cls, value.encode("utf-8"))
+        if isinstance(value, int):
+            return super(Bytes, cls).__new__(cls, value.to_bytes((value.bit_length() + 7) // 8, "big"))
+        raise ValueError(f"Cannot create Bytes from {value}")
+
+    @property
+    def b64encoded(self) -> str:
+        return b64encode(self).decode("utf-8")
+
+    @property
+    def b64urlencoded(self) -> str:
+        return urlsafe_b64encode(self).decode("utf-8")
+
+    def __repr__(self) -> str:
+        return f"Bytes({super(Bytes, self).__repr__()})"
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "Bytes"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "Bytes":
+        if isinstance(v, cls):
+            return v
+        return cls(v)

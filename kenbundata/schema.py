@@ -5,7 +5,7 @@ from pydantic import AnyHttpUrl
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field
 
-from .fields import Id, MimeType
+from .fields import Bytes, Id, MimeType
 from .utils import Camelizer
 
 
@@ -81,10 +81,13 @@ class Blob(BaseModel):
     """
     >>> from unittest.mock import patch
     >>> with patch.object(Blob.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
-    ...     Blob(data=b"hello world", mime_type="text/plain")
+    ...     x = Blob(data=b"hello world", mime_type="text/plain")
     ...
-    Blob(id=Id('XsSoTH9cQzyT1xVxxxctNg'), data=b'hello world', mime_type=<MimeType.text_plain: 'text/plain'>)
+    >>> x
+    Blob(id=Id('XsSoTH9cQzyT1xVxxxctNg'), data=Bytes(b'hello world'), mime_type=<MimeType.text_plain: 'text/plain'>)
+    >>> x.dict()
+    {'id': Id('XsSoTH9cQzyT1xVxxxctNg'), 'data': Bytes(b'hello world'), 'mimeType': <MimeType.text_plain: 'text/plain'>}
     """
 
-    data: bytes
+    data: Bytes
     mime_type: MimeType
