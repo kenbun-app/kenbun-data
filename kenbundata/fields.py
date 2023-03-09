@@ -2,6 +2,7 @@ import uuid
 from base64 import urlsafe_b64decode, urlsafe_b64encode
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
+from enum import Enum
 from typing import Union
 from uuid import UUID
 
@@ -131,3 +132,44 @@ class Timestamp(int):
 
     def __repr__(self) -> str:
         return f"Timestamp({super(Timestamp, self).__repr__()})"
+
+
+class MimeType(str, Enum):
+    """
+    >>> MimeType("application/json")
+    <MimeType.application_json: 'application/json'>
+    >>> MimeType("application/json").value
+    'application/json'
+    >>> MimeType("application/json").name
+    'application_json'
+    >>> MimeType("application/json").mime_type
+    'application/json'
+    >>> MimeType("application/json").extension
+    'json'
+    >>> MimeType("text/plain").extension
+    'txt'
+    >>> MimeType("application/octet-stream").extension
+    'bin'
+    """
+
+    application_json = "application/json"
+    application_octet_stream = "application/octet-stream"
+    application_pdf = "application/pdf"
+    application_xml = "application/xml"
+    application_zip = "application/zip"
+    image_gif = "image/gif"
+    image_jpeg = "image/jpeg"
+    image_png = "image/png"
+    image_svg_xml = "image/svg+xml"
+    image_tiff = "image/tiff"
+    text_html = "text/html"
+    text_plain = "text/plain"
+    text_xml = "text/xml"
+
+    @property
+    def mime_type(self) -> str:
+        return self.value
+
+    @property
+    def extension(self) -> str:
+        return {"text/plain": "txt", "application/octet-stream": "bin"}.get(self.value, self.value.split("/")[-1])
