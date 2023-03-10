@@ -1,0 +1,48 @@
+from collections.abc import MutableMapping
+from typing import cast
+
+import pytest
+from pydantic import AnyHttpUrl
+
+from kenbundata.fields import Id
+from kenbundata.schema import Url
+from kenbundata.storage.base import BaseStorage
+
+
+class ConcreteStorage(BaseStorage):
+    def __init__(self) -> None:
+        self._urls: MutableMapping[Id, Url] = {
+            Id("T3HW7dZ5SjCtODQLQkY8eA"): Url(
+                id=Id("T3HW7dZ5SjCtODQLQkY8eA"), url=cast(AnyHttpUrl, "https://kenbun.app")
+            )
+        }
+
+    def get_url_by_id(self, id: Id) -> Url:
+        return self._urls[id]
+
+    def store_url(self, url: Url) -> None:
+        self._urls[url.id] = url
+
+
+def test_get_url_by_id() -> None:
+    id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
+    expected = Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    sut = ConcreteStorage()
+    actual = sut.get_url_by_id(id_)
+    assert actual == expected
+
+
+def test_get_url_by_id_raises_key_error() -> None:
+    id_ = Id("Xia5PlGDRDCGwaalhXqdww")
+    sut = ConcreteStorage()
+    with pytest.raises(KeyError):
+        sut.get_url_by_id(id_)
+
+
+def test_store_url() -> None:
+    id_ = Id("Xia5PlGDRDCGwaalhXqdww")
+    url = Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    sut = ConcreteStorage()
+    sut.store_url(url)
+    actual = sut.get_url_by_id(id_)
+    assert actual == url
