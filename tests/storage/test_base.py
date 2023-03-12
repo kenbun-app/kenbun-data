@@ -7,6 +7,7 @@ from pydantic import AnyHttpUrl
 from kenbundata.fields import Id
 from kenbundata.schema import Url
 from kenbundata.storage.base import BaseStorage
+from kenbundata.storage.exceptions import UrlNotFoundError
 
 
 class ConcreteStorage(BaseStorage):
@@ -18,6 +19,8 @@ class ConcreteStorage(BaseStorage):
         }
 
     def get_url_by_id(self, id: Id) -> Url:
+        if id not in self._urls:
+            raise UrlNotFoundError(id)
         return self._urls[id]
 
     def store_url(self, url: Url) -> None:
@@ -32,10 +35,10 @@ def test_get_url_by_id() -> None:
     assert actual == expected
 
 
-def test_get_url_by_id_raises_key_error() -> None:
+def test_get_url_by_id_raises_url_not_found_error() -> None:
     id_ = Id("Xia5PlGDRDCGwaalhXqdww")
     sut = ConcreteStorage()
-    with pytest.raises(KeyError):
+    with pytest.raises(UrlNotFoundError):
         sut.get_url_by_id(id_)
 
 

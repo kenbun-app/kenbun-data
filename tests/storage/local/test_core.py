@@ -2,10 +2,12 @@ import os
 from tempfile import TemporaryDirectory
 from typing import cast
 
+import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Id
 from kenbundata.schema import Url
+from kenbundata.storage.exceptions import UrlNotFoundError
 from kenbundata.storage.local import LocalStorage
 
 wd = os.path.dirname(os.path.abspath(__file__))
@@ -22,6 +24,12 @@ def test_local_storage_get_url_by_id() -> None:
     expected = Url(id=Id("xAxynPxZSKa_t6ljybzkHg"), url=cast(AnyHttpUrl, "https://kenbun.app"))
     actual = sut.get_url_by_id(id=Id("xAxynPxZSKa_t6ljybzkHg"))
     assert actual == expected
+
+
+def test_local_storage_get_url_by_id_raises_url_not_found_error() -> None:
+    sut = LocalStorage(path=fixture_path)
+    with pytest.raises(UrlNotFoundError):
+        sut.get_url_by_id(id=Id("koy3tQwzSc6I26fkG-H7LQ"))
 
 
 def test_local_storage_store_url() -> None:
