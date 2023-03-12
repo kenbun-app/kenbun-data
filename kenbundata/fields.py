@@ -1,14 +1,23 @@
 import uuid
+from abc import ABCMeta, abstractmethod
 from base64 import b64decode, b64encode, urlsafe_b64decode, urlsafe_b64encode
 from collections.abc import Callable, Generator
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
 from enum import Enum
-from typing import Any, Union
+from typing import Any, Generic, TypeVar, Union
 from uuid import UUID
 
+T = TypeVar("T")
 
-class Id(UUID):
+
+class Serializable(Generic[T], metaclass=ABCMeta):
+    @abstractmethod
+    def serialize(self) -> T:
+        raise NotImplementedError
+
+
+class Id(UUID, Serializable[str]):
     r"""Id is a UUID4 type that can be used as a primary key.
     >>> from unittest.mock import patch
     >>> with patch("uuid.uuid4", return_value=UUID('cf57432e-809e-4353-adbd-9d5c0d733868')):
@@ -55,6 +64,21 @@ class Id(UUID):
 
     def __str__(self) -> str:
         return self.b64encoded
+
+    def serialize(self) -> str:
+        return self.b64encoded
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "Id"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "Id":
+        if isinstance(v, cls):
+            return v
+        if isinstance(v, (UUID, bytes, str, int)):
+            return cls(v)
+        raise ValueError(f"Cannot convert {v} to {cls}")
 
 
 class Timestamp(int):
@@ -180,7 +204,7 @@ class MimeType(str, Enum):
         return {"text/plain": "txt", "application/octet-stream": "bin"}.get(self.value, self.value.split("/")[-1])
 
 
-class Bytes(bytes):
+class Bytes(bytes, Serializable[str]):
     r"""
     >>> Bytes(b"hello")
     Bytes(b'hello')
@@ -225,3 +249,6 @@ class Bytes(bytes):
         if isinstance(v, cls):
             return v
         return cls(v)
+
+    def serialize(self) -> str:
+        return self.b64urlencoded

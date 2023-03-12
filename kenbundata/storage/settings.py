@@ -1,5 +1,5 @@
-from ..settings import BaseSettings
+from ..settings import BaseComponentSettings
 
 
-class BaseStorageSettings(BaseSettings):
+class BaseStorageSettings(BaseComponentSettings):
     pass
