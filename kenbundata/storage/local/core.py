@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterable
 
 from ...encoders import KenbunEncoder
 from ...fields import Id
@@ -31,6 +32,12 @@ class LocalStorage(BaseStorage):
             os.makedirs(os.path.join(self.path, "urls"))
         with open(os.path.join(self.path, "urls", f"{url.id}.json"), "w", encoding="utf-8") as f:
             f.write(_encoder.encode(url))
+
+    def list_urls(self) -> Iterable[Url]:
+        if os.path.exists(os.path.join(self.path, "urls")):
+            for filename in os.listdir(os.path.join(self.path, "urls")):
+                with open(os.path.join(self.path, "urls", filename), "rb") as f:
+                    yield Url.parse_raw(f.read())
 
     @classmethod
     def from_settings(cls, settings: BaseStorageSettings) -> "LocalStorage":

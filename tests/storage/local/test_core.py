@@ -1,6 +1,6 @@
 import os
 from tempfile import TemporaryDirectory
-from typing import cast
+from typing import List, cast
 
 import pytest
 from pydantic import AnyHttpUrl
@@ -42,4 +42,22 @@ def test_local_storage_store_url() -> None:
         assert os.path.exists(os.path.join(tmpdir, "urls", "xAxynPxZSKa_t6ljybzkHg.json"))
         with open(os.path.join(tmpdir, "urls", "xAxynPxZSKa_t6ljybzkHg.json"), "r") as f:
             actual = f.read()
+        assert actual == expected
+
+
+def test_local_storage_list_urls() -> None:
+    sut = LocalStorage(path=fixture_path)
+    expected = [
+        Url(id=Id("xAxynPxZSKa_t6ljybzkHg"), url=cast(AnyHttpUrl, "https://kenbun.app")),
+        Url(id=Id("uVbjm2k3RGu0nilH1ydlMQ"), url=cast(AnyHttpUrl, "https://osoken.ai")),
+    ]
+    actual = list(sut.list_urls())
+    assert all(a in expected for a in actual) and all(e in actual for e in expected) and len(actual) == len(expected)
+
+
+def test_local_storage_list_urls_empty() -> None:
+    with TemporaryDirectory() as tmpdir:
+        sut = LocalStorage(path=tmpdir)
+        expected: List[Url] = []
+        actual = list(sut.list_urls())
         assert actual == expected

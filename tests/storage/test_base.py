@@ -1,4 +1,4 @@
-from collections.abc import MutableMapping
+from collections.abc import Iterable, MutableMapping
 from typing import cast
 
 import pytest
@@ -27,6 +27,9 @@ class ConcreteStorage(BaseStorage):
     def store_url(self, url: Url) -> None:
         self._urls[url.id] = url
 
+    def list_urls(self) -> Iterable[Url]:
+        return iter(list(self._urls.values()))
+
     @classmethod
     def from_settings(cls, settings: BaseStorageSettings) -> "ConcreteStorage":
         return cls()
@@ -54,3 +57,11 @@ def test_store_url() -> None:
     sut.store_url(url)
     actual = sut.get_url_by_id(id_)
     assert actual == url
+
+
+def test_list_urls() -> None:
+    id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
+    expected = [Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))]
+    sut = ConcreteStorage()
+    actual = list(sut.list_urls())
+    assert actual == expected

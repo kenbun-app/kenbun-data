@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterable
 from typing import Type, TypeVar
 
 from ..fields import Id
@@ -15,6 +16,10 @@ class BaseStorage(metaclass=ABCMeta):
 
     @abstractmethod
     def store_url(self, url: Url) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def list_urls(self) -> Iterable[Url]:
         raise NotImplementedError
 
     @classmethod
