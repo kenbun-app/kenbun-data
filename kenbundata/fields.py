@@ -261,4 +261,4 @@ class Bytes(bytes, Serializable[str]):
         return cls(v)
 
     def serialize(self) -> str:
-        return self.urlsafe_b64encoded
+        return self.standard_b64encoded
