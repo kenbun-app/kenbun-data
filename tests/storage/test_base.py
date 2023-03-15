@@ -7,6 +7,7 @@ from pydantic import AnyHttpUrl
 from kenbundata.fields import Id
 from kenbundata.storage.base import BaseStorage
 from kenbundata.storage.exceptions import UrlNotFoundError
+from kenbundata.storage.settings import BaseStorageSettings
 from kenbundata.types import Url
 
 
@@ -25,6 +26,10 @@ class ConcreteStorage(BaseStorage):
 
     def store_url(self, url: Url) -> None:
         self._urls[url.id] = url
+
+    @classmethod
+    def from_settings(cls, settings: BaseStorageSettings) -> "ConcreteStorage":
+        return cls()
 
 
 def test_get_url_by_id() -> None:

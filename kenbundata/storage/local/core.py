@@ -5,6 +5,8 @@ from ...fields import Id
 from ...types import Url
 from ..base import BaseStorage
 from ..exceptions import UrlNotFoundError
+from ..settings import BaseStorageSettings
+from .settings import LocalStorageSettings
 
 _encoder = KenbunEncoder()
 
@@ -29,3 +31,9 @@ class LocalStorage(BaseStorage):
             os.makedirs(os.path.join(self.path, "urls"))
         with open(os.path.join(self.path, "urls", f"{url.id}.json"), "w", encoding="utf-8") as f:
             f.write(_encoder.encode(url))
+
+    @classmethod
+    def from_settings(cls, settings: BaseStorageSettings) -> "LocalStorage":
+        if not isinstance(settings, LocalStorageSettings):
+            raise TypeError(f"Expected settings to be LocalStorageSettings, got {type(settings)}")
+        return cls(path=settings.path)

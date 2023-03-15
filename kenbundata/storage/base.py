@@ -1,7 +1,11 @@
 from abc import ABCMeta, abstractmethod
+from typing import Type, TypeVar
 
 from ..fields import Id
 from ..types import Url
+from .settings import BaseStorageSettings
+
+T = TypeVar("T", bound="BaseStorage")
 
 
 class BaseStorage(metaclass=ABCMeta):
@@ -11,4 +15,9 @@ class BaseStorage(metaclass=ABCMeta):
 
     @abstractmethod
     def store_url(self, url: Url) -> None:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def from_settings(cls: Type[T], settings: BaseStorageSettings) -> T:
         raise NotImplementedError
