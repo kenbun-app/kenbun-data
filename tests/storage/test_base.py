@@ -5,9 +5,9 @@ import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Id
-from kenbundata.schema import Url
 from kenbundata.storage.base import BaseStorage
 from kenbundata.storage.exceptions import UrlNotFoundError
+from kenbundata.types import Url
 
 
 class ConcreteStorage(BaseStorage):

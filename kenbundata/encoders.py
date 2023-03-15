@@ -2,7 +2,7 @@ from json import JSONEncoder
 from typing import Any
 
 from .fields import Serializable
-from .schema import BaseModel
+from .types import BaseModel
 
 
 class KenbunEncoder(JSONEncoder):

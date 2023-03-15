@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 from ..fields import Id
-from ..schema import Url
+from ..types import Url
 
 
 class BaseStorage(metaclass=ABCMeta):

@@ -6,9 +6,9 @@ import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Id
-from kenbundata.schema import Url
 from kenbundata.storage.exceptions import UrlNotFoundError
 from kenbundata.storage.local import LocalStorage
+from kenbundata.types import Url
 
 wd = os.path.dirname(os.path.abspath(__file__))
 fixture_path = os.path.join(wd, "fixtures")

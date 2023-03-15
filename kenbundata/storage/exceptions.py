@@ -2,7 +2,7 @@ from typing import Type
 
 from ..exceptions import BaseError
 from ..fields import Id
-from ..schema import BaseModel, Url
+from ..types import BaseModel, Url
 
 
 class StorageError(BaseError):

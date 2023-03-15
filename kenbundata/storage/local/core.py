@@ -2,7 +2,7 @@ import os
 
 from ...encoders import KenbunEncoder
 from ...fields import Id
-from ...schema import Url
+from ...types import Url
 from ..base import BaseStorage
 from ..exceptions import UrlNotFoundError
 
