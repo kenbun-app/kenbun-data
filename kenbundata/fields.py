@@ -1,6 +1,12 @@
 import uuid
 from abc import ABCMeta, abstractmethod
-from base64 import b64decode, b64encode, urlsafe_b64decode, urlsafe_b64encode
+from base64 import (
+    b64encode,
+    standard_b64decode,
+    standard_b64encode,
+    urlsafe_b64decode,
+    urlsafe_b64encode,
+)
 from collections.abc import Callable, Generator
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
@@ -216,7 +222,7 @@ class Bytes(bytes, Serializable[str]):
     '68656c6c6f'
     >>> Bytes(b"hello").b64encoded
     'aGVsbG8='
-    >>> Bytes(b"hello").b64urlencoded
+    >>> Bytes(b"hello").urlsafe_b64encoded
     'aGVsbG8='
     """
 
@@ -224,7 +230,7 @@ class Bytes(bytes, Serializable[str]):
         if isinstance(value, bytes):
             return super(Bytes, cls).__new__(cls, value)
         if isinstance(value, str):
-            return super(Bytes, cls).__new__(cls, b64decode(value))
+            return super(Bytes, cls).__new__(cls, standard_b64decode(value))
         if isinstance(value, int):
             return super(Bytes, cls).__new__(cls, value.to_bytes((value.bit_length() + 7) // 8, "big"))
         raise ValueError(f"Cannot create Bytes from {value}")
@@ -234,8 +240,12 @@ class Bytes(bytes, Serializable[str]):
         return b64encode(self).decode("utf-8")
 
     @property
-    def b64urlencoded(self) -> str:
+    def urlsafe_b64encoded(self) -> str:
         return urlsafe_b64encode(self).decode("utf-8")
+
+    @property
+    def standard_b64encoded(self) -> str:
+        return standard_b64encode(self).decode("utf-8")
 
     def __repr__(self) -> str:
         return f"Bytes({super(Bytes, self).__repr__()})"
@@ -251,4 +261,4 @@ class Bytes(bytes, Serializable[str]):
         return cls(v)
 
     def serialize(self) -> str:
-        return self.b64urlencoded
+        return self.urlsafe_b64encoded
