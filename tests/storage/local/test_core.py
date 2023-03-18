@@ -75,3 +75,16 @@ def test_local_storage_get_blob_by_id_raises_blob_not_found_error() -> None:
     sut = LocalStorage(path=fixture_path)
     with pytest.raises(BlobNotFoundError):
         sut.get_blob_by_id(Id("koy3tQwzSc6I26fkG-H7LQ"))
+
+
+def test_local_storage_store_blob() -> None:
+    with TemporaryDirectory() as tmpdir:
+        sut = LocalStorage(path=tmpdir)
+        blob = Blob(id=Id("JSxa9P6_Qjij1P1WPE7g4g"), data=Bytes("YWFh"), mime_type=MimeType.text_plain)
+        sut.store_blob(blob=blob)
+        with open(os.path.join(fixture_path, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"), "r") as f:
+            expected = f.read()
+        assert os.path.exists(os.path.join(tmpdir, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"))
+        with open(os.path.join(tmpdir, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"), "r") as f:
+            actual = f.read()
+        assert actual == expected

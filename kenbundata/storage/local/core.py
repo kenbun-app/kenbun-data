@@ -46,7 +46,10 @@ class LocalStorage(BaseStorage):
             return Blob.parse_raw(f.read())
 
     def store_blob(self, blob: Blob) -> None:
-        raise NotImplementedError()
+        if not os.path.exists(os.path.join(self.path, "blobs")):
+            os.makedirs(os.path.join(self.path, "blobs"))
+        with open(os.path.join(self.path, "blobs", f"{blob.id}.json"), "w", encoding="utf-8") as f:
+            f.write(_encoder.encode(blob))
 
     @classmethod
     def from_settings(cls, settings: BaseStorageSettings) -> "LocalStorage":
