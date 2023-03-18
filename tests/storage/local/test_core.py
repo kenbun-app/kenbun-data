@@ -6,7 +6,7 @@ import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Bytes, Id, MimeType
-from kenbundata.storage.exceptions import UrlNotFoundError
+from kenbundata.storage.exceptions import BlobNotFoundError, UrlNotFoundError
 from kenbundata.storage.local import LocalStorage
 from kenbundata.types import Blob, Url
 
@@ -69,3 +69,9 @@ def test_local_storage_get_blob_by_id() -> None:
     expected = Blob(id=id_, data=Bytes("YWFh"), mime_type=MimeType.text_plain)
     actual = sut.get_blob_by_id(id_)
     assert actual == expected
+
+
+def test_local_storage_get_blob_by_id_raises_blob_not_found_error() -> None:
+    sut = LocalStorage(path=fixture_path)
+    with pytest.raises(BlobNotFoundError):
+        sut.get_blob_by_id(Id("koy3tQwzSc6I26fkG-H7LQ"))

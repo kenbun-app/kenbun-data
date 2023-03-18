@@ -5,7 +5,7 @@ from ...encoders import KenbunEncoder
 from ...fields import Id
 from ...types import Blob, Url
 from ..base import BaseStorage
-from ..exceptions import UrlNotFoundError
+from ..exceptions import BlobNotFoundError, UrlNotFoundError
 from ..settings import BaseStorageSettings
 from .settings import LocalStorageSettings
 
@@ -40,6 +40,8 @@ class LocalStorage(BaseStorage):
                     yield Url.parse_raw(f.read())
 
     def get_blob_by_id(self, id: Id) -> Blob:
+        if not os.path.exists(os.path.join(self.path, "blobs", f"{id}.json")):
+            raise BlobNotFoundError(id)
         with open(os.path.join(self.path, "blobs", f"{id}.json"), "rb") as f:
             return Blob.parse_raw(f.read())
 
