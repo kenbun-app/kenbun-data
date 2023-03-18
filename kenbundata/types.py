@@ -11,19 +11,14 @@ from .utils import Camelizer
 
 class BaseModel(_BaseModel):
     """Base model for all models in kenbun.
-    >>> from unittest.mock import patch
     >>> class MyModel(BaseModel):
     ...     name: str
     ...     url: str
     ...
-    >>> with patch.object(MyModel.__fields__["id"], "default_factory", return_value=Id("T3HW7dZ5SjCtODQLQkY8eA")):
-    ...     MyModel(name="kenbun", url="https://kenbun.app")
-    ...
-    MyModel(id=Id('T3HW7dZ5SjCtODQLQkY8eA'), name='kenbun', url='https://kenbun.app')
+    >>> MyModel(name="kenbun", url="https://kenbun.app")
+    MyModel(name='kenbun', url='https://kenbun.app')
     >>>
     """
-
-    id: Id = Field(default_factory=Id.generate)
 
     class Config:
         allow_mutation = False
@@ -42,17 +37,14 @@ class BaseModel(_BaseModel):
         exclude_none: bool = False,
     ) -> Dict[str, Any]:
         """serialize returns a dict representation of the model.
-        >>> from unittest.mock import patch
         >>> class MyModel(BaseModel):
         ...     friend_id: Id
         ...     name: str
         ...     base_url: str
         ...     two_words: str
         ...
-        >>> with patch.object(MyModel.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
-        ...     MyModel(friend_id=Id("fLb3LTy4RsOADmV1rkR2pA"), name="kenbun", base_url="https://kenbun.app", two_words="aaa").dict()
-        ...
-        {'id': Id('XsSoTH9cQzyT1xVxxxctNg'), 'friendID': Id('fLb3LTy4RsOADmV1rkR2pA'), 'name': 'kenbun', 'baseURL': 'https://kenbun.app', 'twoWords': 'aaa'}
+        >>> MyModel(friend_id=Id("fLb3LTy4RsOADmV1rkR2pA"), name="kenbun", base_url="https://kenbun.app", two_words="aaa").dict()
+        {'friendID': Id('fLb3LTy4RsOADmV1rkR2pA'), 'name': 'kenbun', 'baseURL': 'https://kenbun.app', 'twoWords': 'aaa'}
         """  # noqa: E501
         return super(BaseModel, self).dict(
             include=include,
@@ -65,7 +57,24 @@ class BaseModel(_BaseModel):
         )
 
 
-class Url(BaseModel):
+class BaseEntity(BaseModel):
+    """Base entity for all entities in kenbun.
+    >>> from unittest.mock import patch
+    >>> class MyEntity(BaseEntity):
+    ...     name: str
+    ...     url: str
+    ...
+    >>> with patch.object(MyEntity.__fields__["id"], "default_factory", return_value=Id("T3HW7dZ5SjCtODQLQkY8eA")):
+    ...     MyEntity(name="kenbun", url="https://kenbun.app")
+    ...
+    MyEntity(id=Id('T3HW7dZ5SjCtODQLQkY8eA'), name='kenbun', url='https://kenbun.app')
+    >>>
+    """
+
+    id: Id = Field(default_factory=Id.generate)
+
+
+class Url(BaseEntity):
     """Data model represents URL
     >>> from unittest.mock import patch
     >>> with patch.object(Url.__fields__["id"], "default_factory", return_value=Id("zegKeMRzTSux24g3kzp6nw")):
@@ -81,7 +90,7 @@ class Url(BaseModel):
     url: AnyHttpUrl
 
 
-class Blob(BaseModel):
+class Blob(BaseEntity):
     """
     >>> from unittest.mock import patch
     >>> with patch.object(Blob.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
@@ -97,7 +106,7 @@ class Blob(BaseModel):
     mime_type: MimeType
 
 
-class Screenshot(BaseModel):
+class Screenshot(BaseEntity):
     """Data model represents screenshot
     >>> from unittest.mock import patch
     >>> with patch.object(Screenshot.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
