@@ -3,7 +3,7 @@ from collections.abc import Iterable
 
 from ...encoders import KenbunEncoder
 from ...fields import Id
-from ...types import Url
+from ...types import Blob, Url
 from ..base import BaseStorage
 from ..exceptions import UrlNotFoundError
 from ..settings import BaseStorageSettings
@@ -38,6 +38,12 @@ class LocalStorage(BaseStorage):
             for filename in os.listdir(os.path.join(self.path, "urls")):
                 with open(os.path.join(self.path, "urls", filename), "rb") as f:
                     yield Url.parse_raw(f.read())
+
+    def get_blob_by_id(self, id: Id) -> Blob:
+        raise NotImplementedError()
+
+    def store_blob(self, blob: Blob) -> None:
+        raise NotImplementedError()
 
     @classmethod
     def from_settings(cls, settings: BaseStorageSettings) -> "LocalStorage":

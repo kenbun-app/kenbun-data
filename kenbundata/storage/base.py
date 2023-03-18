@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Type, TypeVar
 
 from ..fields import Id
-from ..types import Url
+from ..types import Blob, Url
 from .settings import BaseStorageSettings
 
 T = TypeVar("T", bound="BaseStorage")
@@ -20,6 +20,14 @@ class BaseStorage(metaclass=ABCMeta):
 
     @abstractmethod
     def list_urls(self) -> Iterable[Url]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_blob_by_id(self, id: Id) -> Blob:
+        raise NotImplementedError
+
+    @abstractmethod
+    def store_blob(self, blob: Blob) -> None:
         raise NotImplementedError
 
     @classmethod
