@@ -11,8 +11,11 @@ from collections.abc import Callable, Generator
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
 from enum import Enum
-from typing import Any, Generic, TypeVar, Union
+from io import BytesIO
+from typing import Any, Generic, Optional, TypeVar, Union
 from uuid import UUID
+
+from PIL import Image
 
 T = TypeVar("T")
 
@@ -262,3 +265,64 @@ class Bytes(bytes, Serializable[str]):
 
     def serialize(self) -> str:
         return self.standard_b64encoded
+
+
+class EncodedImage(str):
+    """
+    >>> from PIL import Image
+    >>> image = Image.new("RGB", (1, 1))
+    >>> EncodedImage.from_image(image)
+    EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC')
+    >>> EncodedImage.from_image(image).image.size
+    (1, 1)
+    >>> EncodedImage.from_image(image).image.mode
+    'RGB'
+    >>> EncodedImage.from_image(image).image.format
+    'PNG'
+    >>> EncodedImage.from_image(image).image.getpixel((0, 0))
+    (0, 0, 0)
+    >>> encoded_image = EncodedImage(
+    ...     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC')
+    >>> encoded_image.image.size
+    (1, 1)
+    >>> encoded_image.image.mode
+    'RGB'
+    >>> encoded_image.image.format
+    'PNG'
+    >>> encoded_image.image.getpixel((0, 0))
+    (0, 0, 0)
+    """
+
+    def __init__(self, value: str) -> None:
+        super(EncodedImage, self).__init__()
+        self._image: Optional[Image.Image] = None
+
+    @classmethod
+    def from_image(cls, image: Image.Image) -> "EncodedImage":
+        buf = BytesIO()
+        image.save(buf, format="png")
+        return EncodedImage(standard_b64encode(buf.getvalue()).decode("utf-8"))
+
+    @property
+    def image(self) -> Image.Image:
+        if self._image is None:
+            self._image = Image.open(BytesIO(standard_b64decode(self)), formats=("png",))
+            self._image.load()
+        return self._image
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "EncodedImage"], None, None]:
+        yield cls._validate_image_can_be_loaded
+
+    @classmethod
+    def _validate_image_can_be_loaded(cls, v: Any) -> "EncodedImage":
+        if isinstance(v, Image.Image):
+            v = cls.from_image(v)
+        if not isinstance(v, str):
+            raise TypeError(f"PIL.Image.Image or str required. not {type(v)}")
+        v = EncodedImage(v)
+        v.image
+        return v
+
+    def __repr__(self) -> str:
+        return f"EncodedImage({super(EncodedImage, self).__repr__()})"

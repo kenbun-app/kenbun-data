@@ -25,8 +25,19 @@ setup(
     long_description_content_type="text/markdown",
     package_data={__package_name__: ["py.typed"]},
     packages=[__package_name__],
-    install_requires=["pydantic", "pyhumps"],
+    install_requires=["pydantic", "pyhumps", "pillow"],
     extras_require={
-        "dev": ["flake8", "pytest", "black", "mypy", "tox", "isort", "pytest-mock", "pytest-cov", "freezegun"],
+        "dev": [
+            "flake8",
+            "pytest",
+            "black",
+            "mypy",
+            "tox",
+            "isort",
+            "pytest-mock",
+            "pytest-cov",
+            "freezegun",
+            "types-Pillow",
+        ],
     },
 )

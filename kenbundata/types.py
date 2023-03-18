@@ -5,7 +5,7 @@ from pydantic import AnyHttpUrl
 from pydantic import BaseModel as _BaseModel
 from pydantic import Field
 
-from .fields import Bytes, Id, MimeType
+from .fields import Bytes, EncodedImage, Id, MimeType
 from .utils import Camelizer
 
 
@@ -95,3 +95,25 @@ class Blob(BaseModel):
 
     data: Bytes
     mime_type: MimeType
+
+
+class ScreenShot(BaseModel):
+    """Data model represents screenshot
+    >>> from unittest.mock import patch
+    >>> with patch.object(ScreenShot.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
+    ...     x = ScreenShot(encoded_image=EncodedImage("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"))
+
+    >>> x
+    ScreenShot(id=Id('XsSoTH9cQzyT1xVxxxctNg'), encoded_image=EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC'))
+    >>> from .encoders import KenbunEncoder
+    >>> KenbunEncoder().encode(x)
+    '{"id": "XsSoTH9cQzyT1xVxxxctNg", "encodedImage": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"}'
+    >>> x.encoded_image.image.size
+    (1, 2)
+    >>> x.encoded_image.image.format
+    'PNG'
+    >>> x.encoded_image.image.mode
+    'L'
+    """  # noqa: E501
+
+    encoded_image: EncodedImage
