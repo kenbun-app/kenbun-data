@@ -97,14 +97,14 @@ class Blob(BaseModel):
     mime_type: MimeType
 
 
-class ScreenShot(BaseModel):
+class Screenshot(BaseModel):
     """Data model represents screenshot
     >>> from unittest.mock import patch
-    >>> with patch.object(ScreenShot.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
-    ...     x = ScreenShot(encoded_image=EncodedImage("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"))
+    >>> with patch.object(Screenshot.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
+    ...     x = Screenshot(encoded_image=EncodedImage("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"))
 
     >>> x
-    ScreenShot(id=Id('XsSoTH9cQzyT1xVxxxctNg'), encoded_image=EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC'))
+    Screenshot(id=Id('XsSoTH9cQzyT1xVxxxctNg'), encoded_image=EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC'))
     >>> from .encoders import KenbunEncoder
     >>> KenbunEncoder().encode(x)
     '{"id": "XsSoTH9cQzyT1xVxxxctNg", "encodedImage": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"}'
