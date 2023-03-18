@@ -5,10 +5,10 @@ from typing import List, cast
 import pytest
 from pydantic import AnyHttpUrl
 
-from kenbundata.fields import Id
+from kenbundata.fields import Bytes, Id, MimeType
 from kenbundata.storage.exceptions import UrlNotFoundError
 from kenbundata.storage.local import LocalStorage
-from kenbundata.types import Url
+from kenbundata.types import Blob, Url
 
 wd = os.path.dirname(os.path.abspath(__file__))
 fixture_path = os.path.join(wd, "fixtures")
@@ -61,3 +61,11 @@ def test_local_storage_list_urls_empty() -> None:
         expected: List[Url] = []
         actual = list(sut.list_urls())
         assert actual == expected
+
+
+def test_local_storage_get_blob_by_id() -> None:
+    sut = LocalStorage(path=fixture_path)
+    id_ = Id("JSxa9P6_Qjij1P1WPE7g4g")
+    expected = Blob(id=id_, data=Bytes("YWFh"), mime_type=MimeType.text_plain)
+    actual = sut.get_blob_by_id(id_)
+    assert actual == expected

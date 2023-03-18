@@ -40,7 +40,8 @@ class LocalStorage(BaseStorage):
                     yield Url.parse_raw(f.read())
 
     def get_blob_by_id(self, id: Id) -> Blob:
-        raise NotImplementedError()
+        with open(os.path.join(self.path, "blobs", f"{id}.json"), "rb") as f:
+            return Blob.parse_raw(f.read())
 
     def store_blob(self, blob: Blob) -> None:
         raise NotImplementedError()
