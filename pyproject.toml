@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+
+
+[project]
+name = "kenbundata"
+description = "A description for your project"
+authors = [
+    {name = "osoken", email = "osoken.devel@outlook.jp"},
+]
+dynamic = [
+    "version", 
+]
+readme = "README.md"
+license = {file = "LICENSE"}
+
+dependencies = [
+    "pydantic",
+    "pyhumps",
+    "pillow",
+    "python-dateutil",
+]
+
+[project.urls]
+Source = "https://github.com/kenbun-app/kenbun-data"
+
+[tool.setuptools]
+packages=["kenbundata", "kenbundata.storage"]
+
+[tool.setuptools.package-data]
+kenbundata = ["py.typed"]
+
+
+[project.optional-dependencies]
+dev=["black", "flake8", "pytest", "mypy", "tox", "isort", "pytest-mock", "pytest-cov", "freezegun", "types-Pillow", "types-python-dateutil"]
