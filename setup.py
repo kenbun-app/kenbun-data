@@ -25,7 +25,7 @@ setup(
     long_description_content_type="text/markdown",
     package_data={__package_name__: ["py.typed"]},
     packages=[__package_name__],
-    install_requires=["pydantic", "pyhumps", "pillow"],
+    install_requires=["pydantic", "pyhumps", "pillow", "python-dateutil"],
     extras_require={
         "dev": [
             "flake8",
@@ -38,6 +38,7 @@ setup(
             "pytest-cov",
             "freezegun",
             "types-Pillow",
+            "types-python-dateutil",
         ],
     },
 )

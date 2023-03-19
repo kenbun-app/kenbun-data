@@ -1,3 +1,4 @@
+import re
 import uuid
 from abc import ABCMeta, abstractmethod
 from base64 import (
@@ -7,14 +8,14 @@ from base64 import (
     urlsafe_b64decode,
     urlsafe_b64encode,
 )
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
-from enum import Enum
 from io import BytesIO
 from typing import Any, Generic, Optional, TypeVar, Union
 from uuid import UUID
 
+from dateutil.parser import parse as parse_datetime
 from PIL import Image
 
 T = TypeVar("T")
@@ -103,12 +104,35 @@ class Timestamp(int):
     >>> a.datetime
     datetime.datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=datetime.timezone.utc)
     >>> dt = a.datetime
-    >>> Timestamp.from_datetime(dt)
-    Timestamp(1674397764479000)
     >>> ts = dt.timestamp()
-    >>> Timestamp.from_float(ts)
+    >>> Timestamp(dt)
     Timestamp(1674397764479000)
+    >>> Timestamp(ts)
+    Timestamp(1674397764479000)
+    >>> Timestamp("2023-01-22T14:29:24.422Z")
+    Timestamp(1674397764422000)
     """
+
+    def __new__(cls, value: Union[int, float, _datetime, str]) -> "Timestamp":
+        if isinstance(value, _datetime):
+            return super(Timestamp, cls).__new__(cls, int(value.timestamp() * 1000000))
+        if isinstance(value, str):
+            return super(Timestamp, cls).__new__(cls, int(parse_datetime(value).timestamp() * 1000000))
+        if isinstance(value, float):
+            return super(Timestamp, cls).__new__(cls, int(value * 1000000))
+        return super(Timestamp, cls).__new__(cls, value)
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "Timestamp"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "Timestamp":
+        if isinstance(v, cls):
+            return v
+        if isinstance(v, (int, float, _datetime, str)):
+            return cls(v)
+        raise ValueError(f"Cannot convert {v} to {cls}")
 
     @property
     def milliseconds(self) -> int:
@@ -138,22 +162,6 @@ class Timestamp(int):
         return _datetime.fromtimestamp(self / 1000000, tz=_timezone.utc)
 
     @classmethod
-    def from_datetime(cls, dt: _datetime) -> "Timestamp":
-        """
-        >>> Timestamp.from_datetime(_datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=_timezone.utc))
-        Timestamp(1674397764479000)
-        """
-        return cls.from_float(dt.timestamp())
-
-    @classmethod
-    def from_float(cls, f: float) -> "Timestamp":
-        """
-        >>> Timestamp.from_datetime(_datetime(2023, 1, 22, 14, 29, 24, 479000, tzinfo=_timezone.utc))
-        Timestamp(1674397764479000)
-        """
-        return cls(int(f * 1000000))
-
-    @classmethod
     def now(cls) -> "Timestamp":
         """
         >>> import freezegun
@@ -162,55 +170,74 @@ class Timestamp(int):
         ...     Timestamp.now()
         Timestamp(1674397763123321)
         """
-        return cls.from_datetime(_datetime.utcnow())
+        return cls(_datetime.utcnow())
 
     def __repr__(self) -> str:
         return f"Timestamp({super(Timestamp, self).__repr__()})"
 
 
-class MimeType(str, Enum):
+class MimeType(str):
+    _regex = re.compile(
+        r"^(?P<type>[a-z]+)/(?P<subtype>[a-z0-9\-\+\.]+)(?P<params>(;\s?[a-zA-Z0-9\-\+\.]+=[a-zA-Z0-9\-\+\.]+)*)$"
+    )
     """
     >>> MimeType("application/json")
-    <MimeType.application_json: 'application/json'>
-    >>> MimeType("application/json").value
+    MimeType('application/json')
+    >>> str(MimeType("application/json"))
     'application/json'
-    >>> MimeType("application/json").name
-    'application_json'
-    >>> MimeType("application/json").mime_type
-    'application/json'
-    >>> MimeType("application/json").extension
-    'json'
-    >>> MimeType("text/plain").extension
-    'txt'
-    >>> MimeType("application/octet-stream").extension
-    'bin'
-    >>> MimeType("nonsuch/mimetype")
+    >>> mt = MimeType("text/plain;charset=utf-8")
+    >>> mt.type
+    'text'
+    >>> mt.subtype
+    'plain'
+    >>> mt.parameters
+    {'charset': 'utf-8'}
+    >>> mt
+    MimeType('text/plain;charset=utf-8')
+    >>> MimeType("wrongformat")
     Traceback (most recent call last):
         ...
-    ValueError: 'nonsuch/mimetype' is not a valid MimeType
+    ValueError: 'wrongformat' is not a valid MimeType
     """
 
-    application_json = "application/json"
-    application_octet_stream = "application/octet-stream"
-    application_pdf = "application/pdf"
-    application_xml = "application/xml"
-    application_zip = "application/zip"
-    image_gif = "image/gif"
-    image_jpeg = "image/jpeg"
-    image_png = "image/png"
-    image_svg_xml = "image/svg+xml"
-    image_tiff = "image/tiff"
-    text_html = "text/html"
-    text_plain = "text/plain"
-    text_xml = "text/xml"
+    def __init__(self, value: str) -> None:
+        super(MimeType, self).__init__()
+        m = self._regex.match(value)
+        if m is None:
+            raise ValueError(f"'{value}' is not a valid MimeType")
+        self._type = m.group("type")
+        self._subtype = m.group("subtype")
+        self._parameters = dict([p.split("=") for p in m.group("params").split(";")[1:]])
 
     @property
-    def mime_type(self) -> str:
-        return self.value
+    def type(self) -> str:
+        return self._type
 
     @property
-    def extension(self) -> str:
-        return {"text/plain": "txt", "application/octet-stream": "bin"}.get(self.value, self.value.split("/")[-1])
+    def subtype(self) -> str:
+        return self._subtype
+
+    @property
+    def parameters(self) -> Mapping[str, str]:
+        return self._parameters
+
+    def __repr__(self) -> str:
+        return f"MimeType('{self}')"
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "MimeType"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "MimeType":
+        if isinstance(v, cls):
+            return v
+        if isinstance(v, str):
+            m = cls._regex.match(v)
+            if m is None:
+                raise ValueError(f"'{v}' is not a valid MimeType")
+            return cls(v)
+        raise ValueError(f"Cannot convert {v} to {cls}")
 
 
 class Bytes(bytes, Serializable[str]):

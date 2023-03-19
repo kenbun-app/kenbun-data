@@ -20,7 +20,7 @@ class ConcreteStorage(BaseStorage):
         }
         self._blobs: MutableMapping[Id, Blob] = {
             Id("8bbz-1tVSGqlVU7_zvomqg"): Blob(
-                id=Id('8bbz-1tVSGqlVU7_zvomqg'), data=Bytes(b'aaa'), mime_type=MimeType.text_plain
+                id=Id('8bbz-1tVSGqlVU7_zvomqg'), data=Bytes(b'aaa'), mime_type=MimeType("text/plain")
             )
         }
 
@@ -82,7 +82,7 @@ def test_list_urls() -> None:
 
 def test_get_blob_by_id() -> None:
     id_ = Id("8bbz-1tVSGqlVU7_zvomqg")
-    expected = Blob(id=id_, data=Bytes(b'aaa'), mime_type=MimeType.text_plain)
+    expected = Blob(id=id_, data=Bytes(b'aaa'), mime_type=MimeType("text/plain"))
     sut = ConcreteStorage()
     actual = sut.get_blob_by_id(id_)
     assert actual == expected
@@ -90,7 +90,7 @@ def test_get_blob_by_id() -> None:
 
 def test_store_blob() -> None:
     id_ = Id("ltv5IY6LTpmIIf1QWeGNGw")
-    blob = Blob(id=Id('ltv5IY6LTpmIIf1QWeGNGw'), data=Bytes(b'bbb'), mime_type=MimeType.text_plain)
+    blob = Blob(id=Id('ltv5IY6LTpmIIf1QWeGNGw'), data=Bytes(b'bbb'), mime_type=MimeType("text/plain"))
     sut = ConcreteStorage()
     sut.store_blob(blob)
     actual = sut.get_blob_by_id(id_)

@@ -66,7 +66,7 @@ def test_local_storage_list_urls_empty() -> None:
 def test_local_storage_get_blob_by_id() -> None:
     sut = LocalStorage(path=fixture_path)
     id_ = Id("JSxa9P6_Qjij1P1WPE7g4g")
-    expected = Blob(id=id_, data=Bytes("YWFh"), mime_type=MimeType.text_plain)
+    expected = Blob(id=id_, data=Bytes("YWFh"), mime_type=MimeType("text/plain"))
     actual = sut.get_blob_by_id(id_)
     assert actual == expected
 
@@ -80,7 +80,7 @@ def test_local_storage_get_blob_by_id_raises_blob_not_found_error() -> None:
 def test_local_storage_store_blob() -> None:
     with TemporaryDirectory() as tmpdir:
         sut = LocalStorage(path=tmpdir)
-        blob = Blob(id=Id("JSxa9P6_Qjij1P1WPE7g4g"), data=Bytes("YWFh"), mime_type=MimeType.text_plain)
+        blob = Blob(id=Id("JSxa9P6_Qjij1P1WPE7g4g"), data=Bytes("YWFh"), mime_type=MimeType("text/plain"))
         sut.store_blob(blob=blob)
         with open(os.path.join(fixture_path, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"), "r") as f:
             expected = f.read()
