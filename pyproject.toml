@@ -25,7 +25,7 @@ dependencies = [
 Source = "https://github.com/kenbun-app/kenbun-data"
 
 [tool.setuptools]
-packages=["kenbundata", "kenbundata.storage"]
+packages=["kenbundata", "kenbundata.storage", "kenbundata.storage.local", "kenbundata.storage.postgres"]
 
 [tool.setuptools.package-data]
 kenbundata = ["py.typed"]

@@ -3,9 +3,9 @@ from collections.abc import Iterable
 
 from ...encoders import KenbunEncoder
 from ...fields import Id
-from ...types import Blob, Url
+from ...types import Blob, Screenshot, Url
 from ..base import BaseStorage
-from ..exceptions import BlobNotFoundError, UrlNotFoundError
+from ..exceptions import BlobNotFoundError, ScreenshotNotFoundError, UrlNotFoundError
 from ..settings import BaseStorageSettings
 from .settings import LocalStorageSettings
 
@@ -56,3 +56,15 @@ class LocalStorage(BaseStorage):
         if not isinstance(settings, LocalStorageSettings):
             raise TypeError(f"Expected settings to be LocalStorageSettings, got {type(settings)}")
         return cls(path=settings.path)
+
+    def get_screenshot_by_id(self, id: Id) -> Screenshot:
+        if not os.path.exists(os.path.join(self.path, "screenshots", f"{id}.json")):
+            raise ScreenshotNotFoundError(id)
+        with open(os.path.join(self.path, "screenshots", f"{id}.json"), "rb") as f:
+            return Screenshot.parse_raw(f.read())
+
+    def store_screenshot(self, screenshot: Screenshot) -> None:
+        if not os.path.exists(os.path.join(self.path, "screenshots")):
+            os.makedirs(os.path.join(self.path, "screenshots"))
+        with open(os.path.join(self.path, "screenshots", f"{screenshot.id}.json"), "w", encoding="utf-8") as f:
+            f.write(_encoder.encode(screenshot))

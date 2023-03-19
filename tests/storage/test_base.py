@@ -4,11 +4,17 @@ from typing import cast
 import pytest
 from pydantic import AnyHttpUrl
 
-from kenbundata.fields import Bytes, Id, MimeType
+from kenbundata.fields import Bytes, EncodedImage, Id, MimeType
 from kenbundata.storage.base import BaseStorage
-from kenbundata.storage.exceptions import BlobNotFoundError, UrlNotFoundError
+from kenbundata.storage.exceptions import (
+    BlobNotFoundError,
+    ScreenshotNotFoundError,
+    UrlNotFoundError,
+)
 from kenbundata.storage.settings import BaseStorageSettings
-from kenbundata.types import Blob, Url
+from kenbundata.types import Blob, Screenshot, Url
+
+_image_str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC"
 
 
 class ConcreteStorage(BaseStorage):
@@ -21,6 +27,11 @@ class ConcreteStorage(BaseStorage):
         self._blobs: MutableMapping[Id, Blob] = {
             Id("8bbz-1tVSGqlVU7_zvomqg"): Blob(
                 id=Id('8bbz-1tVSGqlVU7_zvomqg'), data=Bytes(b'aaa'), mime_type=MimeType("text/plain")
+            )
+        }
+        self._screenshots: MutableMapping[Id, Screenshot] = {
+            Id("80pExMLSTDS-VCLOIK4_Pg"): Screenshot(
+                id=Id('80pExMLSTDS-VCLOIK4_Pg'), encoded_image=EncodedImage(_image_str)
             )
         }
 
@@ -42,6 +53,14 @@ class ConcreteStorage(BaseStorage):
 
     def store_blob(self, blob: Blob) -> None:
         self._blobs[blob.id] = blob
+
+    def get_screenshot_by_id(self, id: Id) -> Screenshot:
+        if id not in self._screenshots:
+            raise ScreenshotNotFoundError(id)
+        return self._screenshots[id]
+
+    def store_screenshot(self, screenshot: Screenshot) -> None:
+        self._screenshots[screenshot.id] = screenshot
 
     @classmethod
     def from_settings(cls, settings: BaseStorageSettings) -> "ConcreteStorage":
@@ -102,3 +121,27 @@ def test_get_blob_by_id_raises_blob_not_found_error() -> None:
     sut = ConcreteStorage()
     with pytest.raises(BlobNotFoundError):
         sut.get_blob_by_id(id_)
+
+
+def test_get_screenshot_by_id() -> None:
+    id_ = Id("80pExMLSTDS-VCLOIK4_Pg")
+    sut = ConcreteStorage()
+    actaul = sut.get_screenshot_by_id(id_)
+    expected = Screenshot(id=id_, encoded_image=EncodedImage(_image_str))
+    assert actaul == expected
+
+
+def test_get_screenshot_by_id_raises_screenshot_not_found_error() -> None:
+    id_ = Id("ltv5IY6LTpmIIf1QWeGNGw")
+    sut = ConcreteStorage()
+    with pytest.raises(ScreenshotNotFoundError):
+        sut.get_screenshot_by_id(id_)
+
+
+def test_store_screenshot() -> None:
+    id_ = Id("ltv5IY6LTpmIIf1QWeGNGw")
+    screenshot = Screenshot(id=id_, encoded_image=EncodedImage(_image_str))
+    sut = ConcreteStorage()
+    sut.store_screenshot(screenshot)
+    actual = sut.get_screenshot_by_id(id_)
+    assert actual == screenshot

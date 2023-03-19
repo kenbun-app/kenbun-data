@@ -2,7 +2,7 @@ from typing import Type
 
 from ..exceptions import BaseError
 from ..fields import Id
-from ..types import BaseModel, Blob, Url
+from ..types import BaseModel, Blob, Screenshot, Url
 
 
 class StorageError(BaseError):
@@ -30,3 +30,10 @@ class BlobNotFoundError(EntityNotFoundError):
 
     def __init__(self, blob_id: Id):
         super().__init__(blob_id, Blob)
+
+
+class ScreenshotNotFoundError(EntityNotFoundError):
+    """Raised when a screenshot is not found in storage."""
+
+    def __init__(self, screenshot_id: Id):
+        super().__init__(screenshot_id, Screenshot)

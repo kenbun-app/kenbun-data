@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Type, TypeVar
 
 from ..fields import Id
-from ..types import Blob, Url
+from ..types import Blob, Screenshot, Url
 from .settings import BaseStorageSettings
 
 T = TypeVar("T", bound="BaseStorage")
@@ -28,6 +28,14 @@ class BaseStorage(metaclass=ABCMeta):
 
     @abstractmethod
     def store_blob(self, blob: Blob) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_screenshot_by_id(self, id: Id) -> Screenshot:
+        raise NotImplementedError
+
+    @abstractmethod
+    def store_screenshot(self, screenshot: Screenshot) -> None:
         raise NotImplementedError
 
     @classmethod

@@ -6,9 +6,13 @@ import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Bytes, Id, MimeType
-from kenbundata.storage.exceptions import BlobNotFoundError, UrlNotFoundError
+from kenbundata.storage.exceptions import (
+    BlobNotFoundError,
+    ScreenshotNotFoundError,
+    UrlNotFoundError,
+)
 from kenbundata.storage.local import LocalStorage
-from kenbundata.types import Blob, Url
+from kenbundata.types import Blob, Screenshot, Url
 
 wd = os.path.dirname(os.path.abspath(__file__))
 fixture_path = os.path.join(wd, "fixtures")
@@ -86,5 +90,34 @@ def test_local_storage_store_blob() -> None:
             expected = f.read()
         assert os.path.exists(os.path.join(tmpdir, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"))
         with open(os.path.join(tmpdir, "blobs", "JSxa9P6_Qjij1P1WPE7g4g.json"), "r") as f:
+            actual = f.read()
+        assert actual == expected
+
+
+def test_local_storage_get_screenshot_by_id() -> None:
+    sut = LocalStorage(path=fixture_path)
+    id_ = Id("80pExMLSTDS-VCLOIK4_Pg")
+    with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
+        expected = Screenshot.parse_raw(f.read())
+    actual = sut.get_screenshot_by_id(id_)
+    assert actual == expected
+
+
+def test_local_storage_get_screenshot_by_id_raises_screenshot_not_found_error() -> None:
+    sut = LocalStorage(path=fixture_path)
+    with pytest.raises(ScreenshotNotFoundError):
+        sut.get_screenshot_by_id(Id("koy3tQwzSc6I26fkG-H7LQ"))
+
+
+def test_local_storage_store_screenshot() -> None:
+    with TemporaryDirectory() as tmpdir:
+        sut = LocalStorage(path=tmpdir)
+        with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
+            screenshot = Screenshot.parse_raw(f.read())
+        sut.store_screenshot(screenshot=screenshot)
+        with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
+            expected = f.read()
+        assert os.path.exists(os.path.join(tmpdir, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"))
+        with open(os.path.join(tmpdir, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
             actual = f.read()
         assert actual == expected
