@@ -111,6 +111,13 @@ class Timestamp(int):
     Timestamp(1674397764479000)
     >>> Timestamp("2023-01-22T14:29:24.422Z")
     Timestamp(1674397764422000)
+    >>> Timestamp("2023/02/12 12:21:12")
+    Timestamp(1676172072000000)
+    >>> Timestamp("invalid")
+    Traceback (most recent call last):
+      ...
+    dateutil.parser._parser.ParserError: Unknown string format: invalid
+
     """
 
     def __new__(cls, value: Union[int, float, _datetime, str]) -> "Timestamp":
