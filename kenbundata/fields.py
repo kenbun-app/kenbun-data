@@ -209,12 +209,17 @@ class MimeType(str):
 
     def __init__(self, value: str) -> None:
         super(MimeType, self).__init__()
-        m = self._regex.match(value)
-        if m is None:
-            raise ValueError(f"'{value}' is not a valid MimeType")
-        self._type = m.group("type")
-        self._subtype = m.group("subtype")
-        self._parameters = dict([p.split("=") for p in m.group("params").split(";")[1:]])
+        if len(value) == 0:
+            self._type = ""
+            self._subtype = ""
+            self._parameters = {}
+        else:
+            m = self._regex.match(value)
+            if m is None:
+                raise ValueError(f"'{value}' is not a valid MimeType")
+            self._type = m.group("type")
+            self._subtype = m.group("subtype")
+            self._parameters = dict([p.split("=") for p in m.group("params").split(";")[1:]])
 
     @property
     def type(self) -> str:
