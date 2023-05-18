@@ -3,15 +3,16 @@ from typing import Optional, cast
 
 from pydantic import PostgresDsn, validator
 
+from ...settings import GlobalSettings
 from ..settings import BaseStorageSettings
 
 
 class PostgresStorageSettings(BaseStorageSettings):
-    host_name: str = 'db'
-    user: str = 'postgres'
+    host: str = 'db'
+    username: str = 'postgres'
     password: str
-    port: str = '5432'
-    database_name: str = 'postgres'
+    port: int = 5432
+    database: str = 'postgres'
     sqlalchemy_database_url: Optional[PostgresDsn] = None
 
     @validator("sqlalchemy_database_url", pre=True)
@@ -22,10 +23,20 @@ class PostgresStorageSettings(BaseStorageSettings):
             str,
             PostgresDsn.build(
                 scheme="postgresql",
-                user=values.get("user"),
+                username=values.get("username"),
                 password=values.get("password"),
-                host=values.get("host_name"),
-                port=values.get('port'),
-                path=f"/{values.get('database_name') or ''}",
+                host=values.get("host"),
+                port=str(values.get('port')),
+                path=f"/{values.get('database') or ''}",
             ),
+        )
+
+    @classmethod
+    def from_global_settings(cls, global_settings: GlobalSettings) -> "PostgresStorageSettings":
+        return cls(
+            host=global_settings.storage_settings.get("host", "db"),
+            port=global_settings.storage_settings.get("port", 5432),
+            database=global_settings.storage_settings.get("database", "postgres"),
+            username=global_settings.storage_settings.get("username", "postgres"),
+            password=str(global_settings.storage_settings.get("password")),
         )
