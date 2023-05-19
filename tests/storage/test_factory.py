@@ -12,3 +12,13 @@ def test_create_storage_local(mocker: MockerFixture) -> None:
     from_settings.assert_called_once_with(settings=from_global_settings.return_value)
     from_global_settings.assert_called_once_with(settings=settings)
     assert storage == from_settings.return_value
+
+
+def test_create_storage_postgres(mocker: MockerFixture) -> None:
+    settings = GlobalSettings(storage_type=StorageType.POSTGRES, storage_settings={"password": "passwd"})
+    from_global_settings = mocker.patch("kenbundata.storage.factory.PostgresStorageSettings.from_global_settings")
+    from_settings = mocker.patch("kenbundata.storage.factory.PostgresStorage.from_settings")
+    storage = create_storage(settings=settings)
+    from_settings.assert_called_once_with(settings=from_global_settings.return_value)
+    from_global_settings.assert_called_once_with(settings=settings)
+    assert storage == from_settings.return_value

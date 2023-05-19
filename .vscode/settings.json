@@ -1,19 +1,18 @@
 {
-    "editor.formatOnSave": true,
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
-      "--line-length",
-      "120",
-      "--skip-string-normalization",
-      "--target-version",
-      "py310"
-    ],
-    "isort.args": ["--profile", "black"],
-    "[python]": {
-      "editor.codeActionsOnSave": {
-        "source.organizeImports": true
-      }
+  "editor.formatOnSave": true,
+  "python.formatting.provider": "none",
+  "python.formatting.blackArgs": [
+    "--line-length",
+    "120",
+    "--skip-string-normalization",
+    "--target-version",
+    "py310"
+  ],
+  "[python]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
     },
-    "python.defaultInterpreterPath": ".venv/bin/python"
-  }
-  
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "python.defaultInterpreterPath": ".venv/bin/python"
+}

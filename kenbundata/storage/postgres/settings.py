@@ -32,11 +32,11 @@ class PostgresStorageSettings(BaseStorageSettings):
         )
 
     @classmethod
-    def from_global_settings(cls, global_settings: GlobalSettings) -> "PostgresStorageSettings":
+    def from_global_settings(cls, settings: GlobalSettings) -> "PostgresStorageSettings":
         return cls(
-            host=global_settings.storage_settings.get("host", "db"),
-            port=global_settings.storage_settings.get("port", 5432),
-            database=global_settings.storage_settings.get("database", "postgres"),
-            username=global_settings.storage_settings.get("username", "postgres"),
-            password=str(global_settings.storage_settings.get("password")),
+            host=settings.storage_settings.get("host", "db"),
+            port=settings.storage_settings.get("port", 5432),
+            database=settings.storage_settings.get("database", "postgres"),
+            username=settings.storage_settings.get("username", "postgres"),
+            password=str(settings.storage_settings.get("password")),
         )
