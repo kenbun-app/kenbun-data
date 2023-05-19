@@ -23,7 +23,7 @@ class PostgresStorageSettings(BaseStorageSettings):
             str,
             PostgresDsn.build(
                 scheme="postgresql",
-                username=values.get("username"),
+                user=values.get("username"),
                 password=values.get("password"),
                 host=values.get("host"),
                 port=str(values.get('port')),
