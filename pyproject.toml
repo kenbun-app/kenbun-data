@@ -19,6 +19,7 @@ dependencies = [
     "pyhumps",
     "pillow",
     "python-dateutil",
+    "sqlalchemy",
 ]
 
 [project.urls]
