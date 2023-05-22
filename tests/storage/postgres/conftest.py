@@ -62,6 +62,7 @@ def schema_for_test(settings_for_test: PostgresStorageSettings, db_for_test: int
     models.Base.metadata.create_all(engine)
 
     yield 1
+    engine.dispose()
 
 
 @pytest.fixture(scope="session")
@@ -91,3 +92,4 @@ def urls_fixture(postgres_storage_fixture: PostgresStorage, url_ids: List[Id]) -
         Url(id=url_ids[0], url="https://osoken.ai"),
         Url(id=url_ids[1], url="https://kenbun.app"),
     ]
+    engine.dispose()

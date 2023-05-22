@@ -21,6 +21,9 @@ class PostgresStorage(BaseStorage):
         self._postgres_dsn = postgres_dsn
         self._engine = create_engine(self._postgres_dsn)
 
+    def __del__(self) -> None:
+        self._engine.dispose()
+
     @property
     def engine(self) -> Engine:
         return self._engine
