@@ -24,6 +24,7 @@ class BaseModel(_BaseModel):
         allow_mutation = False
         alias_generator = Camelizer(["url", "ip", "id"])
         allow_population_by_field_name = True
+        orm_mode = True
 
     def dict(
         self,

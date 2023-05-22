@@ -43,7 +43,7 @@ class PostgresStorage(BaseStorage):
             obj = sess.query(models.Url).filter(models.Url.id == id.uuid).first()
             if not isinstance(obj, models.Url):
                 raise UrlNotFoundError(id)
-            return Url(id=Id(obj.id), url=obj.url)
+            return Url.from_orm(obj)
 
     def get_blob_by_id(self, id: Id) -> Blob:
         raise NotImplementedError()
