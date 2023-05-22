@@ -47,6 +47,8 @@ class Id(UUID, Serializable[str]):
     True
     >>> x == Id(275603287559914445491632874575877060712)
     True
+    >>> x.uuid
+    'cf57432e-809e-4353-adbd-9d5c0d733868'
     """
 
     def __init__(self, value: Union[str, UUID, bytes, int]) -> None:
@@ -71,6 +73,10 @@ class Id(UUID, Serializable[str]):
     @property
     def b64encoded(self) -> str:
         return urlsafe_b64encode(self.bytes).rstrip(b"=").decode("utf-8")
+
+    @property
+    def uuid(self) -> str:
+        return super(Id, self).__str__()
 
     def __str__(self) -> str:
         return self.b64encoded
