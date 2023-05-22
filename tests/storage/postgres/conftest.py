@@ -55,6 +55,8 @@ def db_for_test(settings_for_default: PostgresStorageSettings) -> Generator[int,
     conn.execute(text("drop database test"))
     conn.close()
 
+    engine.dispose()
+
 
 @pytest.fixture(scope="session")
 def schema_for_test(settings_for_test: PostgresStorageSettings, db_for_test: int) -> Generator[int, None, None]:

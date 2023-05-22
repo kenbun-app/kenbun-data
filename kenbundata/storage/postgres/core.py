@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from ...fields import Id
 from ...types import Blob, Screenshot, Url
 from ..base import BaseStorage
+from ..exceptions import UrlNotFoundError
 from ..settings import BaseStorageSettings
 from . import models
 from .settings import PostgresStorageSettings
@@ -40,6 +41,8 @@ class PostgresStorage(BaseStorage):
     def get_url_by_id(self, id: Id) -> Url:
         with self.session as sess:
             obj = sess.query(models.Url).filter(models.Url.id == id.uuid).first()
+            if obj is None:
+                raise UrlNotFoundError(id)
             return Url(id=Id(obj.id), url=obj.url)
 
     def get_blob_by_id(self, id: Id) -> Blob:
