@@ -33,4 +33,4 @@ kenbundata = ["py.typed"]
 
 
 [project.optional-dependencies]
-dev=["black", "flake8", "pytest", "mypy", "tox", "isort", "pytest-mock", "pytest-cov", "freezegun", "types-Pillow", "types-python-dateutil"]
+dev=["black", "flake8", "pytest", "mypy", "tox", "isort", "pytest-mock", "pytest-cov", "freezegun", "types-Pillow", "types-python-dateutil", "psycopg2-binary"]
