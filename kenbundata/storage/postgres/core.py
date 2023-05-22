@@ -41,7 +41,7 @@ class PostgresStorage(BaseStorage):
     def get_url_by_id(self, id: Id) -> Url:
         with self.session as sess:
             obj = sess.query(models.Url).filter(models.Url.id == id.uuid).first()
-            if obj is None:
+            if not isinstance(obj, models.Url):
                 raise UrlNotFoundError(id)
             return Url(id=Id(obj.id), url=obj.url)
 
