@@ -45,6 +45,12 @@ class PostgresStorage(BaseStorage):
                 raise UrlNotFoundError(id)
             return Url.from_orm(obj)
 
+    def store_url(self, url: Url) -> None:
+        with self.session as sess:
+            obj = models.Url(id=url.id.uuid, url=url.url)
+            sess.merge(obj)
+            sess.commit()
+
     def get_blob_by_id(self, id: Id) -> Blob:
         raise NotImplementedError()
 
@@ -58,7 +64,4 @@ class PostgresStorage(BaseStorage):
         raise NotImplementedError()
 
     def store_screenshot(self, screenshot: Screenshot) -> None:
-        raise NotImplementedError()
-
-    def store_url(self, url: Url) -> None:
         raise NotImplementedError()

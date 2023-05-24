@@ -67,6 +67,13 @@ def db_for_test(settings_for_default: PostgresStorageSettings) -> Generator[int,
 
 
 @pytest.fixture(scope="session")
+def engine_for_test(settings_for_test: PostgresStorageSettings, db_for_test: int) -> Generator[Engine, None, None]:
+    engine = create_engine_from_settings(settings_for_test)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture(scope="session")
 def schema_for_test(settings_for_test: PostgresStorageSettings, db_for_test: int) -> Generator[int, None, None]:
     engine = create_engine_from_settings(settings_for_test)
     models.Base.metadata.create_all(engine)
