@@ -30,3 +30,14 @@ def test_store_url(postgres_storage_fixture: PostgresStorage, engine_for_test: E
         actual = sess.query(models.Url).get(url.id.uuid)
         assert actual is not None
         assert actual.url == url.url
+
+
+def test_store_url_update(
+    postgres_storage_fixture: PostgresStorage, engine_for_test: Engine, url_ids: List[Id]
+) -> None:
+    url = Url(id=url_ids[0], url=cast(AnyHttpUrl, "https://otherexample.com"))
+    postgres_storage_fixture.store_url(url)
+    with Session(engine_for_test) as sess:
+        actual = sess.query(models.Url).get(url.id.uuid)
+        assert actual is not None
+        assert actual.url == url.url
