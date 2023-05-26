@@ -41,3 +41,8 @@ def test_store_url_update(
         actual = sess.query(models.Url).get(url.id.uuid)
         assert actual is not None
         assert actual.url == url.url
+
+
+def test_list_urls(postgres_storage_fixture: PostgresStorage, urls_fixture: List[Url]) -> None:
+    actual = list(postgres_storage_fixture.list_urls())
+    assert actual == urls_fixture

@@ -94,12 +94,13 @@ def url_ids() -> Generator[List[Id], None, None]:
     yield [Id("uVbjm2k3RGu0nilH1ydlMQ"), Id("xAxynPxZSKa_t6ljybzkHg")]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def urls_fixture(
     postgres_storage_fixture: PostgresStorage, settings_for_test: PostgresStorageSettings, url_ids: List[Id]
 ) -> Generator[List[Url], None, None]:
     engine = create_engine_from_settings(settings_for_test)
     with Session(engine) as session:
+        session.query(models.Url).delete()
         session.add_all(
             [
                 models.Url(id=url_ids[0].uuid, url="https://osoken.ai"),

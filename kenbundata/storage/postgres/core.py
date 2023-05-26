@@ -58,7 +58,9 @@ class PostgresStorage(BaseStorage):
         raise NotImplementedError()
 
     def list_urls(self) -> Iterable[Url]:
-        raise NotImplementedError()
+        with self.session as sess:
+            for obj in sess.query(models.Url).all():
+                yield Url.from_orm(obj)
 
     def store_blob(self, blob: Blob) -> None:
         raise NotImplementedError()
