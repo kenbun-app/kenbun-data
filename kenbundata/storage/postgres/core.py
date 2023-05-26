@@ -51,16 +51,16 @@ class PostgresStorage(BaseStorage):
             sess.merge(obj)
             sess.commit()
 
+    def list_urls(self) -> Iterable[Url]:
+        with self.session as sess:
+            for obj in sess.query(models.Url).all():
+                yield Url.from_orm(obj)
+
     def get_blob_by_id(self, id: Id) -> Blob:
         raise NotImplementedError()
 
     def get_screenshot_by_id(self, id: Id) -> Screenshot:
         raise NotImplementedError()
-
-    def list_urls(self) -> Iterable[Url]:
-        with self.session as sess:
-            for obj in sess.query(models.Url).all():
-                yield Url.from_orm(obj)
 
     def store_blob(self, blob: Blob) -> None:
         raise NotImplementedError()
