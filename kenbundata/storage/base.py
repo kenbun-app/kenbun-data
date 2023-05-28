@@ -42,3 +42,9 @@ class BaseStorage(metaclass=ABCMeta):
     @abstractmethod
     def from_settings(cls: Type[T], settings: BaseStorageSettings) -> T:
         raise NotImplementedError
+
+
+class BaseCursorAwareStorage(BaseStorage):
+    @abstractmethod
+    def list_urls_with_cursor(self, cursor: str) -> Iterable[Url]:
+        raise NotImplementedError
