@@ -371,3 +371,32 @@ class EncodedImage(str):
 
     def __repr__(self) -> str:
         return f"EncodedImage({super(EncodedImage, self).__repr__()})"
+
+
+class CursorValue(str):
+    """
+    >>> CursorValue("1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA")
+    CursorValue('1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA')
+    """
+
+    cursor_regex = re.compile(r"^\d{13}\|[a-zA-Z0-9_-]{22}$")
+
+    def __init__(self, value: str) -> None:
+        super(CursorValue, self).__init__()
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "CursorValue"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "CursorValue":
+        if isinstance(v, cls):
+            return v
+        if not isinstance(v, str):
+            raise TypeError(f"str required. not {type(v)}")
+        if cls.cursor_regex.match(v) is None:
+            raise ValueError(f"'{v}' is not a valid cursor")
+        return cls(v)
+
+    def __repr__(self) -> str:
+        return f"CursorValue({super(CursorValue, self).__repr__()})"
