@@ -404,3 +404,18 @@ class CursorValue(str):
 
     def __repr__(self) -> str:
         return f"CursorValue({super(CursorValue, self).__repr__()})"
+
+
+class Cursor(str):
+    """
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE")
+    Cursor('PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE')
+
+    """
+
+    next_cursor_symbol = ">"
+    prev_cursor_symbol = "<"
+    cursor_regex = re.compile(r"^[<>]\|\d{13}\|[a-zA-Z0-9_-]{22}$")
+
+    def __repr__(self) -> str:
+        return f"Cursor({super(Cursor, self).__repr__()})"
