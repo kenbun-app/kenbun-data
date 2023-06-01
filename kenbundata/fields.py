@@ -424,6 +424,22 @@ class Cursor(str):
     Traceback (most recent call last):
         ...
     ValueError: Invalid cursor value: PnxpbnZhbGlk
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").decode()
+    '<|1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA'
+    >>> Cursor("PnwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").direction
+    <Direction.NEXT: '>'>
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").direction
+    <Direction.PREV: '<'>
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").is_next()
+    False
+    >>> Cursor("PnwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").is_next()
+    True
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").is_prev()
+    True
+    >>> Cursor("PnwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").is_prev()
+    False
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=").value
+    CursorValue('1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA')
     """
 
     class Direction(str, Enum):
@@ -459,3 +475,20 @@ class Cursor(str):
         if not isinstance(v, str):
             raise TypeError(f"str required. not {type(v)}")
         return cls(v)
+
+    def decode(self) -> str:
+        return urlsafe_b64decode(self).decode("utf-8")
+
+    @property
+    def direction(self) -> Direction:
+        return self.Direction(self.decode()[0])
+
+    def is_next(self) -> bool:
+        return self.direction == self.Direction.NEXT
+
+    def is_prev(self) -> bool:
+        return self.direction == self.Direction.PREV
+
+    @property
+    def value(self) -> CursorValue:
+        return CursorValue(self.decode()[2:])
