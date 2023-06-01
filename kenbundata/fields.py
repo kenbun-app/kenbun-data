@@ -1,3 +1,4 @@
+import binascii
 import re
 import uuid
 from abc import ABCMeta, abstractmethod
@@ -408,14 +409,26 @@ class CursorValue(str):
 
 class Cursor(str):
     """
-    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE")
-    Cursor('PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE')
-
+    >>> Cursor("PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=")
+    Cursor('PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=')
+    >>> Cursor("invalid")
+    Traceback (most recent call last):
+     ...
+    ValueError: Invalid cursor value: invalid
     """
 
     next_cursor_symbol = ">"
     prev_cursor_symbol = "<"
     cursor_regex = re.compile(r"^[<>]\|\d{13}\|[a-zA-Z0-9_-]{22}$")
+
+    def __init__(self, value: str) -> None:
+        super(Cursor, self).__init__()
+        try:
+            raw = urlsafe_b64decode(value).decode("utf-8")
+        except binascii.Error:
+            raise ValueError(f"Invalid cursor value: {value}")
+        if not self.cursor_regex.match(raw):
+            raise ValueError(f"Invalid cursor value: {value}")
 
     def __repr__(self) -> str:
         return f"Cursor({super(Cursor, self).__repr__()})"
