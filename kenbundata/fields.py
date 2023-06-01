@@ -12,6 +12,7 @@ from base64 import (
 from collections.abc import Callable, Generator, Mapping
 from datetime import datetime as _datetime
 from datetime import timezone as _timezone
+from enum import Enum
 from io import BytesIO
 from typing import Any, Generic, Optional, TypeVar, Union
 from uuid import UUID
@@ -415,10 +416,20 @@ class Cursor(str):
     Traceback (most recent call last):
      ...
     ValueError: Invalid cursor value: invalid
+    >>> Cursor.from_value("1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA", Cursor.Direction.NEXT)
+    Cursor('PnwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=')
+    >>> Cursor.from_value("1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA", Cursor.Direction.PREV)
+    Cursor('PHwxNjc0Mzk3NzY0NDc5fHoxZERMb0NlUTFPdHZaMWNEWE00YUE=')
+    >>> Cursor.from_value("invalid", Cursor.Direction.NEXT)
+    Traceback (most recent call last):
+        ...
+    ValueError: Invalid cursor value: PnxpbnZhbGlk
     """
 
-    next_cursor_symbol = ">"
-    prev_cursor_symbol = "<"
+    class Direction(str, Enum):
+        NEXT = ">"
+        PREV = "<"
+
     cursor_regex = re.compile(r"^[<>]\|\d{13}\|[a-zA-Z0-9_-]{22}$")
 
     def __init__(self, value: str) -> None:
@@ -432,3 +443,19 @@ class Cursor(str):
 
     def __repr__(self) -> str:
         return f"Cursor({super(Cursor, self).__repr__()})"
+
+    @classmethod
+    def from_value(cls, value: CursorValue, direction: Direction) -> "Cursor":
+        return cls(urlsafe_b64encode(f"{direction.value}|{value}".encode("utf-8")).decode("utf-8"))
+
+    @classmethod
+    def __get_validators__(cls) -> Generator[Callable[[Any], "Cursor"], None, None]:
+        yield cls.validate
+
+    @classmethod
+    def validate(cls, v: Any) -> "Cursor":
+        if isinstance(v, cls):
+            return v
+        if not isinstance(v, str):
+            raise TypeError(f"str required. not {type(v)}")
+        return cls(v)
