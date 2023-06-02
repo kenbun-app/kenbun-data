@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from typing import Type, TypeVar
 
-from ..fields import Id
+from ..fields import Id, Cursor
 from ..types import Blob, Screenshot, Url
 from .settings import BaseStorageSettings
 
@@ -46,5 +46,5 @@ class BaseStorage(metaclass=ABCMeta):
 
 class BaseCursorAwareStorage(BaseStorage):
     @abstractmethod
-    def list_urls_with_cursor(self, cursor: str) -> Iterable[Url]:
+    def list_urls_with_cursor(self, cursor: Cursor) -> Iterable[Url]:
         raise NotImplementedError
