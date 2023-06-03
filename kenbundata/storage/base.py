@@ -1,9 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
-from typing import Type, TypeVar
+from typing import Generic, Optional, Type, TypeVar
 
-from ..fields import Id, Cursor
-from ..types import Blob, Screenshot, Url
+from ..fields import Cursor, Id
+from ..types import BaseEntity, BaseModel, Blob, Screenshot, Url
 from .settings import BaseStorageSettings
 
 T = TypeVar("T", bound="BaseStorage")
@@ -44,7 +44,20 @@ class BaseStorage(metaclass=ABCMeta):
         raise NotImplementedError
 
 
+E = TypeVar("E", bound="BaseEntity")
+
+
+class ListMetadata(BaseModel):
+    next_cursor: Optional[Cursor]
+    prev_cursor: Optional[Cursor]
+
+
+class IterableWithCursor(BaseModel, Generic[E]):
+    items: Iterable[E]
+    metadata: ListMetadata
+
+
 class BaseCursorAwareStorage(BaseStorage):
     @abstractmethod
-    def list_urls_with_cursor(self, cursor: Cursor) -> Iterable[Url]:
+    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[Url]:
         raise NotImplementedError
