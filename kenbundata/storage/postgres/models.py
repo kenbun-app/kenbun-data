@@ -12,8 +12,11 @@ from sqlalchemy import (
     LargeBinary,
     String,
 )
+from sqlalchemy.engine.default import DefaultExecutionContext
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, relationship
+
+from ...fields import CursorValue, Id, Timestamp
 
 
 class Base(DeclarativeBase):
@@ -23,6 +26,13 @@ class Base(DeclarativeBase):
 chunk_size = 1024 * 1024 * 4
 
 
+def format_cursor_value(context: DefaultExecutionContext) -> str:
+    params = context.current_parameters
+    if params is None:
+        raise ValueError("No parameters")
+    return str(CursorValue.from_timestamp_and_id(Timestamp(params['updated_at']), Id(params['id'])))
+
+
 class Url(Base):
     __tablename__ = "url"
 
@@ -30,6 +40,14 @@ class Url(Base):
     url = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    cursor_value = Column(
+        String,
+        default=format_cursor_value,
+        onupdate=format_cursor_value,
+        index=True,
+        unique=True,
+        nullable=False,
+    )
 
 
 class Blob(Base):
