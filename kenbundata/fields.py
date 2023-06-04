@@ -407,6 +407,10 @@ class CursorValue(str):
     def __repr__(self) -> str:
         return f"CursorValue({super(CursorValue, self).__repr__()})"
 
+    @classmethod
+    def from_timestamp_and_id(cls, ts: Timestamp, id: Id) -> "CursorValue":
+        return cls(f"{ts}|{id}")
+
 
 class Cursor(str):
     """
