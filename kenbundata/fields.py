@@ -379,6 +379,8 @@ class CursorValue(str):
     """
     >>> CursorValue("1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA")
     CursorValue('1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> CursorValue.from_timestamp_and_id(Timestamp(1674397764479000), Id("z1dDLoCeQ1OtvZ1cDXM4aA"))
+    CursorValue('1674397764479|z1dDLoCeQ1OtvZ1cDXM4aA')
     >>> CursorValue("12345679098|z1dDLoCeQ1OtvZ1cDXM4aA")
     Traceback (most recent call last):
      ...
@@ -409,7 +411,7 @@ class CursorValue(str):
 
     @classmethod
     def from_timestamp_and_id(cls, ts: Timestamp, id: Id) -> "CursorValue":
-        return cls(f"{ts}|{id}")
+        return cls(f"{ts.milliseconds}|{id}")
 
 
 class Cursor(str):
