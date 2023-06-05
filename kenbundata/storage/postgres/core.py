@@ -1,19 +1,24 @@
 from collections.abc import Iterable
+from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
+from kenbundata.fields import Cursor
+from kenbundata.storage.base import IterableWithCursor
+from kenbundata.types import Url
+
 from ...fields import Id
 from ...types import Blob, Screenshot, Url
-from ..base import BaseStorage
+from ..base import BaseCursorAwareStorage
 from ..exceptions import UrlNotFoundError
 from ..settings import BaseStorageSettings
 from . import models
 from .settings import PostgresStorageSettings
 
 
-class PostgresStorage(BaseStorage):
+class PostgresStorage(BaseCursorAwareStorage):
     def __init__(self, postgres_dsn: str) -> None:
         super(PostgresStorage, self).__init__()
         self._postgres_dsn = postgres_dsn
@@ -67,3 +72,6 @@ class PostgresStorage(BaseStorage):
 
     def store_screenshot(self, screenshot: Screenshot) -> None:
         raise NotImplementedError()
+
+    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[Url]:
+        ...
