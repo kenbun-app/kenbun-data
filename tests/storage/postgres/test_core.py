@@ -46,3 +46,13 @@ def test_store_url_update(
 def test_list_urls(postgres_storage_fixture: PostgresStorage, urls_fixture: List[Url]) -> None:
     actual = list(postgres_storage_fixture.list_urls())
     assert actual == urls_fixture
+
+
+def test_list_urls_with_cursor(postgres_storage_fixture: PostgresStorage, many_url_ids_fixture: List[Id]) -> None:
+    buf = postgres_storage_fixture.list_urls_with_cursor()
+    actual = list(buf.items)
+    while buf.metadata.next_cursor is not None:
+        buf = postgres_storage_fixture.list_urls_with_cursor(cursor=buf.metadata.next_cursor)
+        actual.extend(list(buf.items))
+    actual.reverse()
+    assert many_url_ids_fixture == [url.id for url in actual]

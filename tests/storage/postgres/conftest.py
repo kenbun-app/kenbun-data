@@ -1,7 +1,9 @@
 from collections.abc import Generator
+from datetime import datetime, timedelta
 from typing import List, cast
 
 import pytest
+from freezegun import freeze_time
 from pydantic import AnyHttpUrl
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
@@ -112,4 +114,22 @@ def urls_fixture(
         Url(id=url_ids[0], url=cast(AnyHttpUrl, "https://osoken.ai")),
         Url(id=url_ids[1], url=cast(AnyHttpUrl, "https://kenbun.app")),
     ]
+    engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def many_url_ids_fixture(
+    postgres_storage_fixture: PostgresStorage, settings_for_test: PostgresStorageSettings
+) -> Generator[List[Id], None, None]:
+    engine = create_engine_from_settings(settings_for_test)
+    ids = []
+    with Session(engine) as session, freeze_time(datetime(2021, 1, 1, 0, 0, 0)) as frozen_datetime:
+        session.query(models.Url).delete()
+        for i in range(32):
+            id_ = Id.generate()
+            ids.append(id_)
+            session.add(models.Url(id=id_.uuid, url=f"https://osoken{i}.ai"))
+            frozen_datetime.tick(delta=timedelta(minutes=1 + i))
+        session.commit()
+    yield ids
     engine.dispose()

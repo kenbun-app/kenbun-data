@@ -59,5 +59,5 @@ class IterableWithCursor(BaseModel, Generic[E]):
 
 class BaseCursorAwareStorage(BaseStorage):
     @abstractmethod
-    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[Url]:
+    def list_urls_with_cursor(self, cursor: Optional[Cursor] = None, limit: int = 10) -> IterableWithCursor[Url]:
         raise NotImplementedError
