@@ -1,91 +1,105 @@
-from collections.abc import Mapping
-from typing import AbstractSet, Any, Dict, List, Optional, Union
+from typing import List, Optional, TypeAlias
 
 from pydantic import AnyHttpUrl
-from pydantic import BaseModel as _BaseModel
-from pydantic import Field, IPvAnyAddress
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field, IPvAnyAddress
+from pydantic.fields import Field
 
 from .fields import Bytes, EncodedImage, Id, MimeType, Timestamp
-from .utils import Camelizer
+from .utils import camelizer
+
+IncEx: TypeAlias = "set[int] | set[str] | dict[int, IncEx] | dict[str, IncEx] | None"
 
 
-class BaseModel(_BaseModel):
-    """Base model for all models in kenbun.
-    >>> class MyModel(BaseModel):
-    ...     name: str
-    ...     url: str
-    ...
-    >>> MyModel(name="kenbun", url="https://kenbun.app")
-    MyModel(name='kenbun', url='https://kenbun.app')
-    >>>
+class BaseModel(PydanticBaseModel):
     """
+    >>> from unittest.mock import patch
+    >>> from uuid import UUID
+    >>> import freezegun
+    >>> from datetime import timedelta, timezone, datetime
+    >>> class DerivedModel(BaseModel):
+    ...   id: Id = Field(default_factory=Id.generate)
+    ...   object_name: str
+    ...   created_at: Timestamp = Field(default_factory=Timestamp.now)
+    >>> with patch("uuid.uuid4", return_value=UUID('cf57432e-809e-4353-adbd-9d5c0d733868')), \
+        freezegun.freeze_time(datetime(2023, 1, 22, 14, 29, 23, 123321, tzinfo=timezone.utc)):
+    ...   x = DerivedModel(object_name="test")
+    >>> x
+    DerivedModel(id=Id('z1dDLoCeQ1OtvZ1cDXM4aA'), object_name='test', created_at=Timestamp(1674397763123321))
+    >>> x.model_dump()
+    {'id': Id('z1dDLoCeQ1OtvZ1cDXM4aA'), 'object_name': 'test', 'created_at': Timestamp(1674397763123321)}
+    >>> x.model_dump_json()
+    '{"id":"z1dDLoCeQ1OtvZ1cDXM4aA","objectName":"test","createdAt":1674397763123321}'
+    >>> DerivedModel.model_validate_json('{"id":"z1dDLoCeQ1OtvZ1cDXM4aA","objectName":"test","createdAt":1674397763123321}')
+    DerivedModel(id=Id('z1dDLoCeQ1OtvZ1cDXM4aA'), object_name='test', created_at=Timestamp(1674397763123321))
+    >>> with patch("uuid.uuid4", return_value= UUID('9ac80d4a-97f5-4ff2-9e68-2e62d833bf60')):
+    ...   DerivedModel.model_validate_json('{"objectName":"test","createdAt":1674397763123321}')
+    DerivedModel(id=Id('msgNSpf1T_KeaC5i2DO_YA'), object_name='test', created_at=Timestamp(1674397763123321))
+    >>> DerivedModel.model_validate_json('{"id":"z1dDLoCeQ1OtvZ1cDXM4aA","object_name":"test","created_at":1674397763123321}')
+    DerivedModel(id=Id('z1dDLoCeQ1OtvZ1cDXM4aA'), object_name='test', created_at=Timestamp(1674397763123321))
+    >>> DerivedModel.model_json_schema()
+    {'properties': {'id': {'format': 'base64EncodedUuid', 'title': 'Id', 'type': 'string'}, 'objectName': {'title': 'Objectname', 'type': 'string'}, 'createdAt': {'format': 'timestamp', 'title': 'Createdat', 'type': 'integer'}}, 'required': ['objectName'], 'title': 'DerivedModel', 'type': 'object'}
+    """  # noqa: E501
 
-    class Config:
-        allow_mutation = False
-        alias_generator = Camelizer(["url", "ip", "id"])
-        allow_population_by_field_name = True
-        orm_mode = True
+    model_config = ConfigDict(populate_by_name=True, alias_generator=camelizer)
 
-    def dict(
+    def model_dump_json(
         self,
         *,
-        include: Union[AbstractSet[Union[int, str]], Mapping[Union[int, str], Any], None] = None,
-        exclude: Union[AbstractSet[Union[int, str]], Mapping[Union[int, str], Any], None] = None,
+        indent: int | None = None,
+        include: IncEx = None,
+        exclude: IncEx = None,
         by_alias: bool = True,
-        skip_defaults: Optional[bool] = None,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
-    ) -> Dict[str, Any]:
-        """serialize returns a dict representation of the model.
-        >>> class MyModel(BaseModel):
-        ...     friend_id: Id
-        ...     name: str
-        ...     base_url: str
-        ...     two_words: str
-        ...
-        >>> MyModel(friend_id=Id("fLb3LTy4RsOADmV1rkR2pA"), name="kenbun", base_url="https://kenbun.app", two_words="aaa").dict()
-        {'friendID': Id('fLb3LTy4RsOADmV1rkR2pA'), 'name': 'kenbun', 'baseURL': 'https://kenbun.app', 'twoWords': 'aaa'}
-        """  # noqa: E501
-        return super(BaseModel, self).dict(
+        round_trip: bool = False,
+        warnings: bool = True,
+    ) -> str:
+        return super(BaseModel, self).model_dump_json(
+            indent=indent,
             include=include,
             exclude=exclude,
             by_alias=by_alias,
-            skip_defaults=skip_defaults,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
+            round_trip=round_trip,
+            warnings=warnings,
         )
 
 
 class BaseEntity(BaseModel):
     """Base entity for all entities in kenbun.
     >>> from unittest.mock import patch
+    >>> from uuid import UUID
     >>> class MyEntity(BaseEntity):
     ...     name: str
     ...     url: str
     ...
-    >>> with patch.object(MyEntity.__fields__["id"], "default_factory", return_value=Id("T3HW7dZ5SjCtODQLQkY8eA")):
+    >>> with patch("uuid.uuid4", return_value=UUID('29865d64-327a-4f9a-ba73-981cadcaf86a')):
     ...     MyEntity(name="kenbun", url="https://kenbun.app")
     ...
-    MyEntity(id=Id('T3HW7dZ5SjCtODQLQkY8eA'), name='kenbun', url='https://kenbun.app')
+    MyEntity(id=Id('KYZdZDJ6T5q6c5gcrcr4ag'), name='kenbun', url='https://kenbun.app')
     >>>
     """
 
     id: Id = Field(default_factory=Id.generate)
 
 
-class Url(BaseEntity):
+class TargetUrl(BaseEntity):
     """Data model represents URL
     >>> from unittest.mock import patch
-    >>> with patch.object(Url.__fields__["id"], "default_factory", return_value=Id("zegKeMRzTSux24g3kzp6nw")):
-    ...     x = Url(url="https://kenbun.app")
+    >>> from uuid import UUID
+    >>> with patch("uuid.uuid4", return_value=UUID('1a2805e9-2554-4a1d-9647-3b59ee281349')):
+    ...     x = TargetUrl(url="https://kenbun.app")
     ...
     >>> x
-    Url(id=Id('zegKeMRzTSux24g3kzp6nw'), url=AnyHttpUrl('https://kenbun.app', ))
-    >>> from .encoders import KenbunEncoder
-    >>> KenbunEncoder().encode(x)
-    '{"id": "zegKeMRzTSux24g3kzp6nw", "url": "https://kenbun.app"}'
+    TargetUrl(id=Id('GigF6SVUSh2WRztZ7igTSQ'), url=Url('https://kenbun.app/'))
+    >>> x.model_dump()
+    {'id': Id('GigF6SVUSh2WRztZ7igTSQ'), 'url': Url('https://kenbun.app/')}
+    >>> x.model_dump_json()
+    '{"id":"GigF6SVUSh2WRztZ7igTSQ","url":"https://kenbun.app/"}'
     """
 
     url: AnyHttpUrl
@@ -94,13 +108,16 @@ class Url(BaseEntity):
 class Blob(BaseEntity):
     """
     >>> from unittest.mock import patch
-    >>> with patch.object(Blob.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
+    >>> from uuid import UUID
+    >>> with patch("uuid.uuid4", return_value=UUID('e2ad3ba0-1197-4097-b26b-11461534cca5')):
     ...     x = Blob(data=b"hello world", mime_type="text/plain")
     ...
     >>> x
-    Blob(id=Id('XsSoTH9cQzyT1xVxxxctNg'), data=Bytes(b'hello world'), mime_type=MimeType('text/plain'))
-    >>> x.dict()
-    {'id': Id('XsSoTH9cQzyT1xVxxxctNg'), 'data': Bytes(b'hello world'), 'mimeType': MimeType('text/plain')}
+    Blob(id=Id('4q07oBGXQJeyaxFGFTTMpQ'), data=Bytes(b'hello world'), mime_type=MimeType('text/plain'))
+    >>> x.model_dump()
+    {'id': Id('4q07oBGXQJeyaxFGFTTMpQ'), 'data': Bytes(b'hello world'), 'mime_type': MimeType('text/plain')}
+    >>> x.model_dump_json()
+    '{"id":"4q07oBGXQJeyaxFGFTTMpQ","data":"aGVsbG8gd29ybGQ=","mimeType":"text/plain"}'
     """
 
     data: Bytes
@@ -110,14 +127,16 @@ class Blob(BaseEntity):
 class Screenshot(BaseEntity):
     """Data model represents screenshot
     >>> from unittest.mock import patch
-    >>> with patch.object(Screenshot.__fields__["id"], "default_factory", return_value=Id("XsSoTH9cQzyT1xVxxxctNg")):
+    >>> from uuid import UUID
+    >>> with patch("uuid.uuid4", return_value=UUID('7287d74a-8894-4935-8c9b-0a437e59e8e2')):
     ...     x = Screenshot(encoded_image=EncodedImage("iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"))
 
     >>> x
-    Screenshot(id=Id('XsSoTH9cQzyT1xVxxxctNg'), encoded_image=EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC'))
-    >>> from .encoders import KenbunEncoder
-    >>> KenbunEncoder().encode(x)
-    '{"id": "XsSoTH9cQzyT1xVxxxctNg", "encodedImage": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"}'
+    Screenshot(id=Id('cofXSoiUSTWMmwpDflno4g'), encoded_image=EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC'))
+    >>> x.model_dump()
+    {'id': Id('cofXSoiUSTWMmwpDflno4g'), 'encoded_image': EncodedImage('iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC')}
+    >>> x.model_dump_json()
+    '{"id":"cofXSoiUSTWMmwpDflno4g","encodedImage":"iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAAAAAC86un7AAAADElEQVR4nGP4z8QAAAMFAQLUtn8MAAAAAElFTkSuQmCC"}'
     >>> x.encoded_image.image.size
     (1, 2)
     >>> x.encoded_image.image.format
@@ -137,7 +156,7 @@ class HarCreator(BaseModel):
 
     name: str
     version: str
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarBrowser(BaseModel):
@@ -148,7 +167,7 @@ class HarBrowser(BaseModel):
 
     name: str
     version: str
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarPageTiming(BaseModel):
@@ -157,9 +176,9 @@ class HarPageTiming(BaseModel):
     HarPageTiming(on_content_load=6629, on_load=9854, comment=None)
     """
 
-    on_content_load: Optional[int]
-    on_load: Optional[int]
-    comment: Optional[str]
+    on_content_load: Optional[int] = None
+    on_load: Optional[int] = None
+    comment: Optional[str] = None
 
 
 class HarPage(BaseModel):
@@ -172,7 +191,7 @@ class HarPage(BaseModel):
     id: str
     title: str
     page_timings: HarPageTiming
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarCookie(BaseModel):
@@ -183,12 +202,12 @@ class HarCookie(BaseModel):
 
     name: str
     value: str
-    path: Optional[str]
-    domain: Optional[str]
-    expires: Optional[Timestamp]
-    http_only: Optional[bool]
-    secure: Optional[bool]
-    comment: Optional[str]
+    path: Optional[str] = None
+    domain: Optional[str] = None
+    expires: Optional[Timestamp] = None
+    http_only: Optional[bool] = None
+    secure: Optional[bool] = None
+    comment: Optional[str] = None
 
 
 class HarHeader(BaseModel):
@@ -199,7 +218,7 @@ class HarHeader(BaseModel):
 
     name: str
     value: str
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarQueryString(BaseModel):
@@ -210,15 +229,15 @@ class HarQueryString(BaseModel):
 
     name: str
     value: str
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarParam(BaseModel):
     name: str
-    value: Optional[str]
-    file_name: Optional[str]
-    content_type: Optional[str]
-    comment: Optional[str]
+    value: Optional[str] = None
+    file_name: Optional[str] = None
+    content_type: Optional[str] = None
+    comment: Optional[str] = None
 
 
 class HarPostData(BaseModel):
@@ -232,15 +251,15 @@ class HarPostData(BaseModel):
     """  # noqa: E501
 
     mime_type: MimeType
-    params: Optional[List[HarParam]]
+    params: Optional[List[HarParam]] = None
     text: str
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarRequest(BaseModel):
     """
     >>> HarRequest(method='GET', url='https://cdn.somepage.nowhere/stub.js', http_version='http/2.0', cookies=[], headers=[{"name":'sec-ch-ua', "value":'"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"'}, {"name":'Referer', "value":'https://www.somepage.nowhere/'}, {"name":'sec-ch-ua-mobile', "value":'?0'}, {"name":'User-Agent', "value":'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}, {"name":'sec-ch-ua-platform', "value":'"Linux"'}], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
-    HarRequest(method='GET', url=AnyHttpUrl('https://cdn.somepage.nowhere/stub.js', ), http_version='http/2.0', cookies=[], headers=[HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='Referer', value='https://www.somepage.nowhere/', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
+    HarRequest(method='GET', url=Url('https://cdn.somepage.nowhere/stub.js', ), http_version='http/2.0', cookies=[], headers=[HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='Referer', value='https://www.somepage.nowhere/', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
     """  # noqa: E501
 
     method: str
@@ -249,10 +268,10 @@ class HarRequest(BaseModel):
     cookies: List[HarCookie]
     headers: List[HarHeader]
     query_string: List[HarQueryString]
-    post_data: Optional[HarPostData]
+    post_data: Optional[HarPostData] = None
     headers_size: int
     body_size: int
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarContent(BaseModel):
@@ -262,11 +281,11 @@ class HarContent(BaseModel):
     """  # noqa: E501
 
     size: int
-    compression: Optional[int]
+    compression: Optional[int] = None
     mime_type: MimeType
-    text: Optional[str]
-    encoding: Optional[str]
-    comment: Optional[str]
+    text: Optional[str] = None
+    encoding: Optional[str] = None
+    comment: Optional[str] = None
 
 
 class HarResponse(BaseModel):
@@ -320,7 +339,7 @@ class HarResponse(BaseModel):
     redirect_url: str
     headers_size: int
     body_size: int
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarCacheRequest(BaseModel):
@@ -329,11 +348,11 @@ class HarCacheRequest(BaseModel):
     HarCacheRequest(expires=Timestamp(1239864636000000), last_access=Timestamp(1234767034000000), e_tag='', hit_count=0, comment='')
     """  # noqa: E501
 
-    expires: Optional[Timestamp]
+    expires: Optional[Timestamp] = None
     last_access: Timestamp
     e_tag: str
     hit_count: int
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class HarCache(BaseModel):
@@ -342,9 +361,9 @@ class HarCache(BaseModel):
     HarCache(before_request=None, after_request=None, comment='')
     """
 
-    before_request: Optional[HarCacheRequest]
-    after_request: Optional[HarCacheRequest]
-    comment: Optional[str]
+    before_request: Optional[HarCacheRequest] = None
+    after_request: Optional[HarCacheRequest] = None
+    comment: Optional[str] = None
 
 
 class HarTiming(BaseModel):
@@ -353,14 +372,14 @@ class HarTiming(BaseModel):
     HarTiming(blocked=1, dns=-1, connect=-1, send=0, wait=312, receive=274, ssl=-1, comment=None)
     """
 
-    blocked: Optional[int]
-    dns: Optional[int]
-    connect: Optional[int]
+    blocked: Optional[int] = None
+    dns: Optional[int] = None
+    connect: Optional[int] = None
     send: int
     wait: int
     receive: int
-    ssl: Optional[int]
-    comment: Optional[str]
+    ssl: Optional[int] = None
+    comment: Optional[str] = None
 
 
 class HarEntry(BaseModel):
@@ -415,19 +434,19 @@ class HarEntry(BaseModel):
     ...   cache={},
     ...   server_ip_address='0.0.0.0'
     ... )
-    HarEntry(pageref='page_1', started_date_time=Timestamp(1679189706638000), time=3, request=HarRequest(method='GET', url=AnyHttpUrl('https://developer.mozilla.org/manifest.56b1cedc.json', ), http_version='http/2.0', cookies=[], headers=[], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None), response=HarResponse(status=200, status_text='', http_version='http/2.0', cookies=[], headers=[HarHeader(name='age', value='15336', comment=None), HarHeader(name='cache-control', value='max-age=31536000, public', comment=None), HarHeader(name='content-length', value='381', comment=None)], content=HarContent(size=381, compression=None, mime_type=MimeType('application/json'), text='{\n  "short_name": "MDN",\n}\n', encoding=None, comment=None), redirect_url='', headers_size=-1, body_size=0, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=0, dns=-1, connect=-1, send=0, wait=2, receive=1, ssl=-1, comment=None), server_ip_address=IPv4Address('0.0.0.0'), connection=None, comment=None)
+    HarEntry(pageref='page_1', started_date_time=Timestamp(1679189706638000), time=3, request=HarRequest(method='GET', url='https://developer.mozilla.org/manifest.56b1cedc.json', http_version='http/2.0', cookies=[], headers=[], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None), response=HarResponse(status=200, status_text='', http_version='http/2.0', cookies=[], headers=[HarHeader(name='age', value='15336', comment=None), HarHeader(name='cache-control', value='max-age=31536000, public', comment=None), HarHeader(name='content-length', value='381', comment=None)], content=HarContent(size=381, compression=None, mime_type=MimeType('application/json'), text='{\n  "short_name": "MDN",\n}\n', encoding=None, comment=None), redirect_url='', headers_size=-1, body_size=0, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=0, dns=-1, connect=-1, send=0, wait=2, receive=1, ssl=-1, comment=None), server_ip_address=IPv4Address('0.0.0.0'), connection=None, comment=None)
 
     """  # noqa: E501
-    pageref: Optional[str]
+    pageref: Optional[str] = None
     started_date_time: Timestamp
     time: int
     request: HarRequest
     response: HarResponse
     cache: HarCache
     timings: HarTiming
-    server_ip_address: Optional[IPvAnyAddress]
-    connection: Optional[str]
-    comment: Optional[str]
+    server_ip_address: Optional[IPvAnyAddress] = None
+    connection: Optional[str] = None
+    comment: Optional[str] = None
 
 
 class HarRoot(BaseModel):
@@ -555,14 +574,14 @@ class HarRoot(BaseModel):
     ...     "_blocked_queueing": 1.7100000000027649
     ...   }
     ... }])
-    HarRoot(version='1.2', creator=HarCreator(name='WebInspector', version='537.36', comment=None), browser=None, pages=[HarPage(started_date_time=Timestamp(1679207775430000), id='page_1', title='http://localhost:8000/', page_timings=HarPageTiming(on_content_load=13, on_load=13, comment=None), comment=None)], entries=[HarEntry(pageref='page_1', started_date_time=Timestamp(1679207775428000), time=5, request=HarRequest(method='GET', url=AnyHttpUrl('http://localhost:8000/', ), http_version='HTTP/1.1', cookies=[], headers=[HarHeader(name='Accept', value='text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', comment=None), HarHeader(name='Accept-Encoding', value='gzip, deflate, br', comment=None), HarHeader(name='Accept-Language', value='ja-JP,ja;q=0.9', comment=None), HarHeader(name='Cache-Control', value='max-age=0', comment=None), HarHeader(name='Connection', value='keep-alive', comment=None), HarHeader(name='Host', value='localhost:8000', comment=None), HarHeader(name='Sec-Fetch-Dest', value='document', comment=None), HarHeader(name='Sec-Fetch-Mode', value='navigate', comment=None), HarHeader(name='Sec-Fetch-Site', value='none', comment=None), HarHeader(name='Sec-Fetch-User', value='?1', comment=None), HarHeader(name='Upgrade-Insecure-Requests', value='1', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=669, body_size=0, comment=None), response=HarResponse(status=200, status_text='OK', http_version='HTTP/1.0', cookies=[], headers=[HarHeader(name='Content-Length', value='934', comment=None), HarHeader(name='Content-type', value='text/html; charset=utf-8', comment=None), HarHeader(name='Date', value='Sun, 19 Mar 2023 06:36:15 GMT', comment=None), HarHeader(name='Server', value='SimpleHTTP/0.6 Python/3.10.10', comment=None)], content=HarContent(size=934, compression=0, mime_type=MimeType('text/html'), text='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n</html>\n', encoding=None, comment=None), redirect_url='', headers_size=156, body_size=934, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=2, dns=0, connect=0, send=0, wait=1, receive=0, ssl=-1, comment=None), server_ip_address=IPv4Address('127.0.0.1'), connection='445', comment=None)], comment=None)
+    HarRoot(version='1.2', creator=HarCreator(name='WebInspector', version='537.36', comment=None), browser=None, pages=[HarPage(started_date_time=Timestamp(1679207775430000), id='page_1', title='http://localhost:8000/', page_timings=HarPageTiming(on_content_load=13, on_load=13, comment=None), comment=None)], entries=[HarEntry(pageref='page_1', started_date_time=Timestamp(1679207775428000), time=5, request=HarRequest(method='GET', url=Url('http://localhost:8000/', ), http_version='HTTP/1.1', cookies=[], headers=[HarHeader(name='Accept', value='text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', comment=None), HarHeader(name='Accept-Encoding', value='gzip, deflate, br', comment=None), HarHeader(name='Accept-Language', value='ja-JP,ja;q=0.9', comment=None), HarHeader(name='Cache-Control', value='max-age=0', comment=None), HarHeader(name='Connection', value='keep-alive', comment=None), HarHeader(name='Host', value='localhost:8000', comment=None), HarHeader(name='Sec-Fetch-Dest', value='document', comment=None), HarHeader(name='Sec-Fetch-Mode', value='navigate', comment=None), HarHeader(name='Sec-Fetch-Site', value='none', comment=None), HarHeader(name='Sec-Fetch-User', value='?1', comment=None), HarHeader(name='Upgrade-Insecure-Requests', value='1', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=669, body_size=0, comment=None), response=HarResponse(status=200, status_text='OK', http_version='HTTP/1.0', cookies=[], headers=[HarHeader(name='Content-Length', value='934', comment=None), HarHeader(name='Content-type', value='text/html; charset=utf-8', comment=None), HarHeader(name='Date', value='Sun, 19 Mar 2023 06:36:15 GMT', comment=None), HarHeader(name='Server', value='SimpleHTTP/0.6 Python/3.10.10', comment=None)], content=HarContent(size=934, compression=0, mime_type=MimeType('text/html'), text='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n</html>\n', encoding=None, comment=None), redirect_url='', headers_size=156, body_size=934, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=2, dns=0, connect=0, send=0, wait=1, receive=0, ssl=-1, comment=None), server_ip_address=IPv4Address('127.0.0.1'), connection='445', comment=None)], comment=None)
     """  # noqa: E501
     version: str
     creator: HarCreator
-    browser: Optional[HarBrowser]
-    pages: Optional[List[HarPage]]
+    browser: Optional[HarBrowser] = None
+    pages: Optional[List[HarPage]] = None
     entries: List[HarEntry]
-    comment: Optional[str]
+    comment: Optional[str] = None
 
 
 class Har(BaseEntity):

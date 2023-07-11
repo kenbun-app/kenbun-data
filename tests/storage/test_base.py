@@ -12,15 +12,15 @@ from kenbundata.storage.exceptions import (
     UrlNotFoundError,
 )
 from kenbundata.storage.settings import BaseStorageSettings
-from kenbundata.types import Blob, Screenshot, Url
+from kenbundata.types import Blob, Screenshot, TargetUrl
 
 _image_str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC"
 
 
 class ConcreteStorage(BaseStorage):
     def __init__(self) -> None:
-        self._urls: MutableMapping[Id, Url] = {
-            Id("T3HW7dZ5SjCtODQLQkY8eA"): Url(
+        self._urls: MutableMapping[Id, TargetUrl] = {
+            Id("T3HW7dZ5SjCtODQLQkY8eA"): TargetUrl(
                 id=Id("T3HW7dZ5SjCtODQLQkY8eA"), url=cast(AnyHttpUrl, "https://kenbun.app")
             )
         }
@@ -35,15 +35,15 @@ class ConcreteStorage(BaseStorage):
             )
         }
 
-    def get_url_by_id(self, id: Id) -> Url:
+    def get_url_by_id(self, id: Id) -> TargetUrl:
         if id not in self._urls:
             raise UrlNotFoundError(id)
         return self._urls[id]
 
-    def store_url(self, url: Url) -> None:
+    def store_url(self, url: TargetUrl) -> None:
         self._urls[url.id] = url
 
-    def list_urls(self) -> Iterable[Url]:
+    def list_urls(self) -> Iterable[TargetUrl]:
         return iter(list(self._urls.values()))
 
     def get_blob_by_id(self, id: Id) -> Blob:
@@ -69,7 +69,7 @@ class ConcreteStorage(BaseStorage):
 
 def test_get_url_by_id() -> None:
     id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
-    expected = Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    expected = TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
     sut = ConcreteStorage()
     actual = sut.get_url_by_id(id_)
     assert actual == expected
@@ -84,7 +84,7 @@ def test_get_url_by_id_raises_url_not_found_error() -> None:
 
 def test_store_url() -> None:
     id_ = Id("Xia5PlGDRDCGwaalhXqdww")
-    url = Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    url = TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
     sut = ConcreteStorage()
     sut.store_url(url)
     actual = sut.get_url_by_id(id_)
@@ -93,7 +93,7 @@ def test_store_url() -> None:
 
 def test_list_urls() -> None:
     id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
-    expected = [Url(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))]
+    expected = [TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))]
     sut = ConcreteStorage()
     actual = list(sut.list_urls())
     assert actual == expected

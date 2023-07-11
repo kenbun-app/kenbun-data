@@ -14,7 +14,7 @@ from kenbundata.fields import Id
 from kenbundata.storage.postgres import models
 from kenbundata.storage.postgres.core import PostgresStorage
 from kenbundata.storage.postgres.settings import PostgresStorageSettings
-from kenbundata.types import Url
+from kenbundata.types import TargetUrl
 
 TEST_DATABASE_NAME = "test"
 
@@ -99,7 +99,7 @@ def url_ids() -> Generator[List[Id], None, None]:
 @pytest.fixture(scope="function")
 def urls_fixture(
     postgres_storage_fixture: PostgresStorage, settings_for_test: PostgresStorageSettings, url_ids: List[Id]
-) -> Generator[List[Url], None, None]:
+) -> Generator[List[TargetUrl], None, None]:
     engine = create_engine_from_settings(settings_for_test)
     with Session(engine) as session:
         session.query(models.Url).delete()
@@ -111,8 +111,8 @@ def urls_fixture(
         )
         session.commit()
     yield [
-        Url(id=url_ids[0], url=cast(AnyHttpUrl, "https://osoken.ai")),
-        Url(id=url_ids[1], url=cast(AnyHttpUrl, "https://kenbun.app")),
+        TargetUrl(id=url_ids[0], url=cast(AnyHttpUrl, "https://osoken.ai")),
+        TargetUrl(id=url_ids[1], url=cast(AnyHttpUrl, "https://kenbun.app")),
     ]
     engine.dispose()
 

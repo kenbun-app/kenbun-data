@@ -16,6 +16,7 @@ license = {file = "LICENSE"}
 
 dependencies = [
     "pydantic",
+    "pydantic-settings",
     "pyhumps",
     "pillow",
     "python-dateutil",

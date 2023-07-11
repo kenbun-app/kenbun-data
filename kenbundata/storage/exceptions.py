@@ -2,7 +2,7 @@ from typing import Type
 
 from ..exceptions import BaseError
 from ..fields import Id
-from ..types import BaseModel, Blob, Screenshot, Url
+from ..types import BaseModel, Blob, Screenshot, TargetUrl
 
 
 class StorageError(BaseError):
@@ -22,7 +22,7 @@ class UrlNotFoundError(EntityNotFoundError):
     """Raised when a URL is not found in storage."""
 
     def __init__(self, url_id: Id):
-        super().__init__(url_id, Url)
+        super().__init__(url_id, TargetUrl)
 
 
 class BlobNotFoundError(EntityNotFoundError):

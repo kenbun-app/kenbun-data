@@ -3,7 +3,7 @@ from collections.abc import Iterable
 from typing import Generic, Optional, Type, TypeVar
 
 from ..fields import Cursor, Id
-from ..types import BaseEntity, BaseModel, Blob, Screenshot, Url
+from ..types import BaseEntity, BaseModel, Blob, Screenshot, TargetUrl
 from .settings import BaseStorageSettings
 
 T = TypeVar("T", bound="BaseStorage")
@@ -11,15 +11,15 @@ T = TypeVar("T", bound="BaseStorage")
 
 class BaseStorage(metaclass=ABCMeta):
     @abstractmethod
-    def get_url_by_id(self, id: Id) -> Url:
+    def get_url_by_id(self, id: Id) -> TargetUrl:
         raise NotImplementedError
 
     @abstractmethod
-    def store_url(self, url: Url) -> None:
+    def store_url(self, url: TargetUrl) -> None:
         raise NotImplementedError
 
     @abstractmethod
-    def list_urls(self) -> Iterable[Url]:
+    def list_urls(self) -> Iterable[TargetUrl]:
         raise NotImplementedError
 
     @abstractmethod
@@ -59,5 +59,5 @@ class IterableWithCursor(BaseModel, Generic[E]):
 
 class BaseCursorAwareStorage(BaseStorage):
     @abstractmethod
-    def list_urls_with_cursor(self, cursor: Optional[Cursor] = None, limit: int = 10) -> IterableWithCursor[Url]:
+    def list_urls_with_cursor(self, cursor: Optional[Cursor] = None, limit: int = 10) -> IterableWithCursor[TargetUrl]:
         raise NotImplementedError

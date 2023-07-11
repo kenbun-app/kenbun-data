@@ -5,13 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from kenbundata.fields import Cursor
-from kenbundata.storage.base import IterableWithCursor
-from kenbundata.types import Url
-
-from ...fields import Id
-from ...types import Blob, Screenshot, Url
-from ..base import BaseCursorAwareStorage
+from ...fields import Cursor, Id
+from ...types import Blob, Screenshot, TargetUrl
+from ..base import BaseCursorAwareStorage, IterableWithCursor
 from ..exceptions import UrlNotFoundError
 from ..settings import BaseStorageSettings
 from . import models
@@ -43,23 +39,23 @@ class PostgresStorage(BaseCursorAwareStorage):
             raise ValueError("SQLAlchemy database URL is not set")
         return cls(postgres_dsn=settings.sqlalchemy_database_url)
 
-    def get_url_by_id(self, id: Id) -> Url:
+    def get_url_by_id(self, id: Id) -> TargetUrl:
         with self.session as sess:
             obj = sess.query(models.Url).filter(models.Url.id == id.uuid).first()
             if not isinstance(obj, models.Url):
                 raise UrlNotFoundError(id)
-            return Url.from_orm(obj)
+            return TargetUrl.from_orm(obj)
 
-    def store_url(self, url: Url) -> None:
+    def store_url(self, url: TargetUrl) -> None:
         with self.session as sess:
             obj = models.Url(id=url.id.uuid, url=url.url)
             sess.merge(obj)
             sess.commit()
 
-    def list_urls(self) -> Iterable[Url]:
+    def list_urls(self) -> Iterable[TargetUrl]:
         with self.session as sess:
             for obj in sess.query(models.Url).all():
-                yield Url.from_orm(obj)
+                yield TargetUrl.from_orm(obj)
 
     def get_blob_by_id(self, id: Id) -> Blob:
         raise NotImplementedError()
@@ -73,5 +69,5 @@ class PostgresStorage(BaseCursorAwareStorage):
     def store_screenshot(self, screenshot: Screenshot) -> None:
         raise NotImplementedError()
 
-    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[Url]:
+    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[TargetUrl]:
         ...

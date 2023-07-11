@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from enum import Enum
 from typing import Any, TypeVar
 
-from pydantic import BaseSettings as _BaseSettings
+from pydantic_settings import BaseSettings as PydanticBaseSettings
 
 S = TypeVar("S", bound="BaseSettings")
 
@@ -13,7 +13,7 @@ class StorageType(str, Enum):
     POSTGRES = "postgres"
 
 
-class BaseSettings(_BaseSettings):
+class BaseSettings(PydanticBaseSettings):
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

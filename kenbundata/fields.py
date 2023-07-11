@@ -1,7 +1,7 @@
 import binascii
 import re
 import uuid
-from abc import ABCMeta, abstractmethod
+from abc import ABC
 from base64 import (
     b64encode,
     standard_b64decode,
@@ -14,23 +14,150 @@ from datetime import datetime as _datetime
 from datetime import timezone as _timezone
 from enum import Enum
 from io import BytesIO
-from typing import Any, Generic, Optional, TypeVar, Union
+from typing import Any, Generic, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from dateutil.parser import parse as parse_datetime
 from PIL import Image
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic.json_schema import JsonSchemaValue
+from pydantic_core import core_schema
+
+from .utils import camelizer, decamelizer
 
 T = TypeVar("T")
+IdT = TypeVar("IdT", bound="Id")
+StrT = TypeVar("StrT", bound="BaseString")
 
 
-class Serializable(Generic[T], metaclass=ABCMeta):
-    @abstractmethod
-    def serialize(self) -> T:
-        raise NotImplementedError
+class BaseString(str):
+    """
+    >>> BaseString("test")
+    BaseString('test')
+    """
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}({super().__repr__()})"
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({super().__repr__()})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(**cls.__get_extra_constraint_dict__()),
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
+    @classmethod
+    def validate(cls: Type[StrT], v: Any) -> StrT:
+        return cls(v)
+
+    def serialize(self) -> str:
+        return str(self)
+
+    @classmethod
+    def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
+        return {"strip_whitespace": True}
+
+    def __hash__(self) -> int:
+        return super(BaseString, self).__hash__()
 
 
-class Id(UUID, Serializable[str]):
+class PySnakeSerCamelStr(BaseString):
+    """
+    >>> PySnakeSerCamelStr("test")
+    PySnakeSerCamelStr('test')
+    >>> from pydantic import TypeAdapter
+    >>> ta = TypeAdapter(PySnakeSerCamelStr)
+    >>> ta.validate_python("test")
+    PySnakeSerCamelStr('test')
+    >>> ta.validate_python("test_test")
+    PySnakeSerCamelStr('test_test')
+    >>> ta.validate_python("testTest")
+    PySnakeSerCamelStr('test_test')
+    >>> ta.dump_json("test_test")
+    b'"testTest"'
+    >>> PySnakeSerCamelStr("test_test") == "testTest"
+    True
+    >>> PySnakeSerCamelStr("test_test") == 123
+    False
+    >>> PySnakeSerCamelStr("test_test") == b"testTest"
+    False
+    """
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_after_validator_function(
+            cls.validate,
+            core_schema.str_schema(**cls.__get_extra_constraint_dict__()),
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
+    @classmethod
+    def validate(cls: Type[StrT], v: Any) -> StrT:
+        return cls(decamelizer(str(v)))
+
+    def serialize(self) -> str:
+        return camelizer(self)
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, str):
+            return False
+        return super().__eq__(decamelizer(other))
+
+    def __hash__(self) -> int:
+        return super(PySnakeSerCamelStr, self).__hash__()
+
+
+class NonEmptyString(BaseString):
+    """
+    >>> from pydantic import TypeAdapter
+    >>> ta = TypeAdapter(NonEmptyString)
+    >>> ta.validate_python("test")
+    NonEmptyString('test')
+    >>> ta.validate_python("")
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
+      String should have at least 1 characters [type=string_too_short, input_value='', input_type=str]
+     ...
+    """
+
+    @classmethod
+    def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
+        return dict(super().__get_extra_constraint_dict__(), min_length=1)
+
+
+class NonEmptyShortString(NonEmptyString):
+    """
+    >>> from pydantic import TypeAdapter
+    >>> ta = TypeAdapter(NonEmptyShortString)
+    >>> ta.validate_python("test")
+    NonEmptyShortString('test')
+    >>> ta.validate_python("")
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
+      String should have at least 1 characters [type=string_too_short, input_value='', input_type=str]
+     ...
+    >>> ta.validate_python("a" * 256)
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
+      String should have at most 255 characters [type=string_too_long, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]
+     ...
+    """  # noqa: E501
+
+    @classmethod
+    def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
+        return dict(super().__get_extra_constraint_dict__(), max_length=255)
+
+
+class Id(UUID):
     r"""Id is a UUID4 type that can be used as a primary key.
+
     >>> from unittest.mock import patch
     >>> with patch("uuid.uuid4", return_value=UUID('cf57432e-809e-4353-adbd-9d5c0d733868')):
     ...     x = Id.generate()
@@ -43,14 +170,45 @@ class Id(UUID, Serializable[str]):
     'cf57432e809e4353adbd9d5c0d733868'
     >>> x.int
     275603287559914445491632874575877060712
+    >>> x.uuid
+    UUID('cf57432e-809e-4353-adbd-9d5c0d733868')
     >>> x == Id('cf57432e809e4353adbd9d5c0d733868')
     True
     >>> x == Id('z1dDLoCeQ1OtvZ1cDXM4aA')
     True
     >>> x == Id(275603287559914445491632874575877060712)
     True
-    >>> x.uuid
-    'cf57432e-809e-4353-adbd-9d5c0d733868'
+    >>> x == Id(x)
+    True
+    >>> class DerivedId(Id):
+    ...   ...
+    >>> y = DerivedId.generate()
+    >>> isinstance(y, Id)
+    True
+    >>> isinstance(y, DerivedId)
+    True
+    >>> isinstance(x, Id)
+    True
+    >>> isinstance(x, DerivedId)
+    False
+    >>> from pydantic import TypeAdapter
+    >>> tao = TypeAdapter(Id)
+    >>> tao.validate_python("z1dDLoCeQ1OtvZ1cDXM4aA")
+    Id('z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> tao.validate_python(Id("z1dDLoCeQ1OtvZ1cDXM4aA"))
+    Id('z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> tao.validate_python(UUID("cf57432e-809e-4353-adbd-9d5c0d733868"))
+    Id('z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> tao.validate_python(275603287559914445491632874575877060712)
+    Id('z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> tao.validate_python("cf57432e-809e-4353-adbd-9d5c0d733868")
+    Id('z1dDLoCeQ1OtvZ1cDXM4aA')
+    >>> tao.dump_json(Id('z1dDLoCeQ1OtvZ1cDXM4aA'))
+    b'"z1dDLoCeQ1OtvZ1cDXM4aA"'
+    >>> tao.json_schema(mode="serialization")
+    {'format': 'base64EncodedUuid', 'type': 'string'}
+    >>> tao.json_schema(mode="validation")
+    {'format': 'base64EncodedUuid', 'type': 'string'}
     """
 
     def __init__(self, value: Union[str, UUID, bytes, int]) -> None:
@@ -69,7 +227,7 @@ class Id(UUID, Serializable[str]):
         super(Id, self).__init__(value)
 
     @classmethod
-    def generate(cls) -> "Id":
+    def generate(cls: Type[IdT]) -> IdT:
         return cls(uuid.uuid4().hex)
 
     @property
@@ -77,26 +235,32 @@ class Id(UUID, Serializable[str]):
         return urlsafe_b64encode(self.bytes).rstrip(b"=").decode("utf-8")
 
     @property
-    def uuid(self) -> str:
-        return super(Id, self).__str__()
+    def uuid(self) -> UUID:
+        return UUID(self.hex)
 
     def __str__(self) -> str:
         return self.b64encoded
 
     def serialize(self) -> str:
-        return self.b64encoded
+        return str(self)
 
     @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], "Id"], None, None]:
-        yield cls.validate
+    def validate(cls: Type[IdT], value: Any) -> IdT:
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, (UUID, bytes, str, int)):
+            return cls(value)
+        raise ValueError(f"Cannot convert {value} to {cls}")
 
     @classmethod
-    def validate(cls, v: Any) -> "Id":
-        if isinstance(v, cls):
-            return v
-        if isinstance(v, (UUID, bytes, str, int)):
-            return cls(v)
-        raise ValueError(f"Cannot convert {v} to {cls}")
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
+    def __get_pydantic_json_schema__(self, _handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+        return {"format": "base64EncodedUuid", "type": "string"}
 
 
 class Timestamp(int):
@@ -125,7 +289,20 @@ class Timestamp(int):
     Traceback (most recent call last):
       ...
     dateutil.parser._parser.ParserError: Unknown string format: invalid
-
+    >>> from pydantic import TypeAdapter
+    >>> ta = TypeAdapter(Timestamp)
+    >>> ta.validate_python(1674397764479000)
+    Timestamp(1674397764479000)
+    >>> ta.validate_python("2023-01-22T14:29:24.422Z")
+    Timestamp(1674397764422000)
+    >>> ta.validate_python("2023/02/12 12:21:12")
+    Timestamp(1676172072000000)
+    >>> ta.validate_python("invalid")
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-plain[validate()]
+      Value error, Unknown string format: invalid [type=value_error, input_value='invalid', input_type=str]
+     ...
     """
 
     def __new__(cls, value: Union[int, float, _datetime, str]) -> "Timestamp":
@@ -189,6 +366,23 @@ class Timestamp(int):
 
     def __repr__(self) -> str:
         return f"Timestamp({super(Timestamp, self).__repr__()})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
+    def __get_pydantic_json_schema__(self, _handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+        return {"format": "timestamp", "type": "integer"}
+
+    def serialize(self) -> int:
+        """
+        >>> Timestamp(1674397764479000).serialize()
+        1674397764479000
+        """
+        return int(self)
 
 
 class MimeType(str):
@@ -259,8 +453,14 @@ class MimeType(str):
             return cls(v)
         raise ValueError(f"Cannot convert {v} to {cls}")
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+        )
 
-class Bytes(bytes, Serializable[str]):
+
+class Bytes(bytes):
     r"""
     >>> Bytes(b"hello")
     Bytes(b'hello')
@@ -313,6 +513,13 @@ class Bytes(bytes, Serializable[str]):
     def serialize(self) -> str:
         return self.standard_b64encoded
 
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
 
 class EncodedImage(str):
     """
@@ -362,7 +569,7 @@ class EncodedImage(str):
         yield cls._validate_image_can_be_loaded
 
     @classmethod
-    def _validate_image_can_be_loaded(cls, v: Any) -> "EncodedImage":
+    def validate(cls, v: Any) -> "EncodedImage":
         if isinstance(v, Image.Image):
             v = cls.from_image(v)
         if not isinstance(v, str):
@@ -373,6 +580,12 @@ class EncodedImage(str):
 
     def __repr__(self) -> str:
         return f"EncodedImage({super(EncodedImage, self).__repr__()})"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+        )
 
 
 class CursorValue(str):
@@ -412,6 +625,12 @@ class CursorValue(str):
     @classmethod
     def from_timestamp_and_id(cls, ts: Timestamp, id: Id) -> "CursorValue":
         return cls(f"{ts.milliseconds}|{id}")
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+        )
 
 
 class Cursor(str):
@@ -498,3 +717,9 @@ class Cursor(str):
     @property
     def value(self) -> CursorValue:
         return CursorValue(self.decode()[2:])
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+        )

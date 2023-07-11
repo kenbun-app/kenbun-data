@@ -21,7 +21,7 @@ class PostgresStorageSettings(BaseStorageSettings):
             return v
         return cast(
             str,
-            PostgresDsn.build(
+            PostgresDsn(
                 scheme="postgresql",
                 user=values.get("username"),
                 password=values.get("password"),
