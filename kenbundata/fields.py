@@ -1,7 +1,6 @@
 import binascii
 import re
 import uuid
-from abc import ABC
 from base64 import (
     b64encode,
     standard_b64decode,
@@ -402,7 +401,7 @@ class Timing(float):
     pydantic_core._pydantic_core.ValidationError: 1 validation error for function-plain[validate()]
       Value error, Cannot convert 6629.123 to <class 'kenbundata.fields.Timing'> [type=value_error, input_value='6629.123', input_type=str]
      ...
-    """
+    """  # noqa: E501
 
     def __new__(cls, value: Union[int, float]) -> "Timing":
         if isinstance(value, int):

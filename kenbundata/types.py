@@ -3,7 +3,6 @@ from typing import List, Optional, TypeAlias
 from pydantic import AnyHttpUrl
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, IPvAnyAddress
-from pydantic.fields import Field
 
 from .fields import Bytes, EncodedImage, Id, MimeType, Timestamp, Timing
 from .utils import camelizer
@@ -370,7 +369,7 @@ class HarTiming(BaseModel):
     """
     >>> HarTiming(blocked=1, dns=-1, connect=-1, send=0, wait=312, receive=274, ssl=-1)
     HarTiming(blocked=Timing(1), dns=Timing(-1), connect=Timing(-1), send=Timing(0), wait=Timing(312), receive=Timing(274), ssl=Timing(-1), comment=None)
-    """
+    """  # noqa: E501
 
     blocked: Optional[Timing] = None
     dns: Optional[Timing] = None

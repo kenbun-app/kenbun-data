@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, TypeVar
 
 from pydantic_settings import BaseSettings as PydanticBaseSettings
+from pydantic_settings import SettingsConfigDict
 
 S = TypeVar("S", bound="BaseSettings")
 
@@ -14,10 +15,9 @@ class StorageType(str, Enum):
 
 
 class BaseSettings(PydanticBaseSettings):
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        env_nested_delimiter = "__"
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", env_nested_delimiter="__", env_prefix="kenbun_"
+    )
 
 
 class GlobalSettings(BaseSettings):

@@ -29,7 +29,7 @@ def test_store_url(postgres_storage_fixture: PostgresStorage, engine_for_test: E
     url = TargetUrl(id=Id("00000000-0000-0000-0000-000000000000"), url=AnyHttpUrl("https://example.com"))
     postgres_storage_fixture.store_url(url)
     with Session(engine_for_test) as sess:
-        actual = sess.query(models.Url).get(url.id.uuid)
+        actual = sess.get(models.Url, url.id.uuid)
         assert actual is not None
         assert actual.url == url.url.unicode_string()
 
@@ -40,7 +40,7 @@ def test_store_url_update(
     url = TargetUrl(id=url_ids[0], url=AnyHttpUrl("https://otherexample.com"))
     postgres_storage_fixture.store_url(url)
     with Session(engine_for_test) as sess:
-        actual = sess.query(models.Url).get(url.id.uuid)
+        actual = sess.get(models.Url, url.id.uuid)
         assert actual is not None
         assert actual.url == url.url.unicode_string()
 

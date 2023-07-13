@@ -44,7 +44,7 @@ class PostgresStorage(BaseCursorAwareStorage):
             obj = sess.query(models.Url).filter(models.Url.id == id.uuid).first()
             if not isinstance(obj, models.Url):
                 raise UrlNotFoundError(id)
-            return TargetUrl.from_orm(obj)
+            return TargetUrl.model_validate(obj)
 
     def store_url(self, url: TargetUrl) -> None:
         with self.session as sess:
@@ -55,7 +55,7 @@ class PostgresStorage(BaseCursorAwareStorage):
     def list_urls(self) -> Iterable[TargetUrl]:
         with self.session as sess:
             for obj in sess.query(models.Url).all():
-                yield TargetUrl.from_orm(obj)
+                yield TargetUrl.model_validate(obj)
 
     def get_blob_by_id(self, id: Id) -> Blob:
         raise NotImplementedError()

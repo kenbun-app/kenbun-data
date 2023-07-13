@@ -15,7 +15,8 @@ class PostgresStorageSettings(BaseStorageSettings):
     @property
     def sqlalchemy_database_url(self) -> PostgresDsn:
         return PostgresDsn(
-            url=f"postgresql://{self.username}:{self.password.replace('@', '%40')}@{self.host}:{self.port}/{self.database}"
+            url=f"postgresql://{self.username}:"
+            f"{self.password.replace('@', '%40')}@{self.host}:{self.port}/{self.database}"
         )
 
     @classmethod

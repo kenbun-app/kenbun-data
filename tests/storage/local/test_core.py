@@ -98,7 +98,7 @@ def test_local_storage_get_screenshot_by_id() -> None:
     sut = LocalStorage(path=fixture_path)
     id_ = Id("80pExMLSTDS-VCLOIK4_Pg")
     with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
-        expected = Screenshot.parse_raw(f.read())
+        expected = Screenshot.model_validate_json(f.read())
     actual = sut.get_screenshot_by_id(id_)
     assert actual == expected
 
@@ -113,7 +113,7 @@ def test_local_storage_store_screenshot() -> None:
     with TemporaryDirectory() as tmpdir:
         sut = LocalStorage(path=tmpdir)
         with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
-            screenshot = Screenshot.parse_raw(f.read())
+            screenshot = Screenshot.model_validate_json(f.read())
         sut.store_screenshot(screenshot=screenshot)
         with open(os.path.join(fixture_path, "screenshots", "80pExMLSTDS-VCLOIK4_Pg.json"), "r") as f:
             expected = f.read()
