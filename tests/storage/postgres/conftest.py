@@ -132,8 +132,8 @@ def many_url_ids_fixture(
                 models.Url(
                     id=obj.id.uuid,
                     url=obj.url.unicode_string(),
-                    created_at=frozen_datetime.time_to_freeze,
-                    updated_at=frozen_datetime.time_to_freeze,
+                    created_at=frozen_datetime(),
+                    updated_at=frozen_datetime(),
                 )
             )
             frozen_datetime.tick(delta=timedelta(minutes=1 + i))
