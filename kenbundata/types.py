@@ -5,7 +5,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, IPvAnyAddress
 from pydantic.fields import Field
 
-from .fields import Bytes, EncodedImage, Id, MimeType, Timestamp
+from .fields import Bytes, EncodedImage, Id, MimeType, Timestamp, Timing
 from .utils import camelizer
 
 IncEx: TypeAlias = "set[int] | set[str] | dict[int, IncEx] | dict[str, IncEx] | None"
@@ -172,19 +172,19 @@ class HarBrowser(BaseModel):
 
 class HarPageTiming(BaseModel):
     """
-    >>> HarPageTiming(on_content_load=6629, on_load=9854)
-    HarPageTiming(on_content_load=6629, on_load=9854, comment=None)
+    >>> HarPageTiming(on_content_load=Timing(6629), on_load=Timing(9854))
+    HarPageTiming(on_content_load=Timing(6629), on_load=Timing(9854), comment=None)
     """
 
-    on_content_load: Optional[int] = None
-    on_load: Optional[int] = None
+    on_content_load: Optional[Timing] = None
+    on_load: Optional[Timing] = None
     comment: Optional[str] = None
 
 
 class HarPage(BaseModel):
     """
     >>> HarPage(started_date_time='2023-03-18T16:08:48.981Z', id='page_1', title='https://www.somepage.nowhere/', page_timings={"on_content_load": 6629, "on_load": 9854})
-    HarPage(started_date_time=Timestamp(1679155728981000), id='page_1', title='https://www.somepage.nowhere/', page_timings=HarPageTiming(on_content_load=6629, on_load=9854, comment=None), comment=None)
+    HarPage(started_date_time=Timestamp(1679155728981000), id='page_1', title='https://www.somepage.nowhere/', page_timings=HarPageTiming(on_content_load=Timing(6629), on_load=Timing(9854), comment=None), comment=None)
     """  # noqa: E501
 
     started_date_time: Timestamp
@@ -259,7 +259,7 @@ class HarPostData(BaseModel):
 class HarRequest(BaseModel):
     """
     >>> HarRequest(method='GET', url='https://cdn.somepage.nowhere/stub.js', http_version='http/2.0', cookies=[], headers=[{"name":'sec-ch-ua', "value":'"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"'}, {"name":'Referer', "value":'https://www.somepage.nowhere/'}, {"name":'sec-ch-ua-mobile', "value":'?0'}, {"name":'User-Agent', "value":'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'}, {"name":'sec-ch-ua-platform', "value":'"Linux"'}], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
-    HarRequest(method='GET', url=Url('https://cdn.somepage.nowhere/stub.js', ), http_version='http/2.0', cookies=[], headers=[HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='Referer', value='https://www.somepage.nowhere/', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
+    HarRequest(method='GET', url=Url('https://cdn.somepage.nowhere/stub.js'), http_version='http/2.0', cookies=[], headers=[HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='Referer', value='https://www.somepage.nowhere/', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None)
     """  # noqa: E501
 
     method: str
@@ -369,16 +369,16 @@ class HarCache(BaseModel):
 class HarTiming(BaseModel):
     """
     >>> HarTiming(blocked=1, dns=-1, connect=-1, send=0, wait=312, receive=274, ssl=-1)
-    HarTiming(blocked=1, dns=-1, connect=-1, send=0, wait=312, receive=274, ssl=-1, comment=None)
+    HarTiming(blocked=Timing(1), dns=Timing(-1), connect=Timing(-1), send=Timing(0), wait=Timing(312), receive=Timing(274), ssl=Timing(-1), comment=None)
     """
 
-    blocked: Optional[int] = None
-    dns: Optional[int] = None
-    connect: Optional[int] = None
-    send: int
-    wait: int
-    receive: int
-    ssl: Optional[int] = None
+    blocked: Optional[Timing] = None
+    dns: Optional[Timing] = None
+    connect: Optional[Timing] = None
+    send: Timing
+    wait: Timing
+    receive: Timing
+    ssl: Optional[Timing] = None
     comment: Optional[str] = None
 
 
@@ -434,12 +434,12 @@ class HarEntry(BaseModel):
     ...   cache={},
     ...   server_ip_address='0.0.0.0'
     ... )
-    HarEntry(pageref='page_1', started_date_time=Timestamp(1679189706638000), time=3, request=HarRequest(method='GET', url='https://developer.mozilla.org/manifest.56b1cedc.json', http_version='http/2.0', cookies=[], headers=[], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None), response=HarResponse(status=200, status_text='', http_version='http/2.0', cookies=[], headers=[HarHeader(name='age', value='15336', comment=None), HarHeader(name='cache-control', value='max-age=31536000, public', comment=None), HarHeader(name='content-length', value='381', comment=None)], content=HarContent(size=381, compression=None, mime_type=MimeType('application/json'), text='{\n  "short_name": "MDN",\n}\n', encoding=None, comment=None), redirect_url='', headers_size=-1, body_size=0, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=0, dns=-1, connect=-1, send=0, wait=2, receive=1, ssl=-1, comment=None), server_ip_address=IPv4Address('0.0.0.0'), connection=None, comment=None)
+    HarEntry(pageref='page_1', started_date_time=Timestamp(1679189706638000), time=Timing(3), request=HarRequest(method='GET', url=Url('https://developer.mozilla.org/manifest.56b1cedc.json'), http_version='http/2.0', cookies=[], headers=[], query_string=[], post_data=None, headers_size=-1, body_size=0, comment=None), response=HarResponse(status=200, status_text='', http_version='http/2.0', cookies=[], headers=[HarHeader(name='age', value='15336', comment=None), HarHeader(name='cache-control', value='max-age=31536000, public', comment=None), HarHeader(name='content-length', value='381', comment=None)], content=HarContent(size=381, compression=None, mime_type=MimeType('application/json'), text='{\n  "short_name": "MDN",\n}\n', encoding=None, comment=None), redirect_url='', headers_size=-1, body_size=0, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=Timing(0), dns=Timing(-1), connect=Timing(-1), send=Timing(0), wait=Timing(2), receive=Timing(1), ssl=Timing(-1), comment=None), server_ip_address=IPv4Address('0.0.0.0'), connection=None, comment=None)
 
     """  # noqa: E501
     pageref: Optional[str] = None
     started_date_time: Timestamp
-    time: int
+    time: Timing
     request: HarRequest
     response: HarResponse
     cache: HarCache
@@ -574,7 +574,7 @@ class HarRoot(BaseModel):
     ...     "_blocked_queueing": 1.7100000000027649
     ...   }
     ... }])
-    HarRoot(version='1.2', creator=HarCreator(name='WebInspector', version='537.36', comment=None), browser=None, pages=[HarPage(started_date_time=Timestamp(1679207775430000), id='page_1', title='http://localhost:8000/', page_timings=HarPageTiming(on_content_load=13, on_load=13, comment=None), comment=None)], entries=[HarEntry(pageref='page_1', started_date_time=Timestamp(1679207775428000), time=5, request=HarRequest(method='GET', url=Url('http://localhost:8000/', ), http_version='HTTP/1.1', cookies=[], headers=[HarHeader(name='Accept', value='text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', comment=None), HarHeader(name='Accept-Encoding', value='gzip, deflate, br', comment=None), HarHeader(name='Accept-Language', value='ja-JP,ja;q=0.9', comment=None), HarHeader(name='Cache-Control', value='max-age=0', comment=None), HarHeader(name='Connection', value='keep-alive', comment=None), HarHeader(name='Host', value='localhost:8000', comment=None), HarHeader(name='Sec-Fetch-Dest', value='document', comment=None), HarHeader(name='Sec-Fetch-Mode', value='navigate', comment=None), HarHeader(name='Sec-Fetch-Site', value='none', comment=None), HarHeader(name='Sec-Fetch-User', value='?1', comment=None), HarHeader(name='Upgrade-Insecure-Requests', value='1', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=669, body_size=0, comment=None), response=HarResponse(status=200, status_text='OK', http_version='HTTP/1.0', cookies=[], headers=[HarHeader(name='Content-Length', value='934', comment=None), HarHeader(name='Content-type', value='text/html; charset=utf-8', comment=None), HarHeader(name='Date', value='Sun, 19 Mar 2023 06:36:15 GMT', comment=None), HarHeader(name='Server', value='SimpleHTTP/0.6 Python/3.10.10', comment=None)], content=HarContent(size=934, compression=0, mime_type=MimeType('text/html'), text='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n</html>\n', encoding=None, comment=None), redirect_url='', headers_size=156, body_size=934, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=2, dns=0, connect=0, send=0, wait=1, receive=0, ssl=-1, comment=None), server_ip_address=IPv4Address('127.0.0.1'), connection='445', comment=None)], comment=None)
+    HarRoot(version='1.2', creator=HarCreator(name='WebInspector', version='537.36', comment=None), browser=None, pages=[HarPage(started_date_time=Timestamp(1679207775430000), id='page_1', title='http://localhost:8000/', page_timings=HarPageTiming(on_content_load=Timing(13.81399999999644), on_load=Timing(13.707000000010794), comment=None), comment=None)], entries=[HarEntry(pageref='page_1', started_date_time=Timestamp(1679207775428000), time=Timing(5.0220000000062015), request=HarRequest(method='GET', url=Url('http://localhost:8000/'), http_version='HTTP/1.1', cookies=[], headers=[HarHeader(name='Accept', value='text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7', comment=None), HarHeader(name='Accept-Encoding', value='gzip, deflate, br', comment=None), HarHeader(name='Accept-Language', value='ja-JP,ja;q=0.9', comment=None), HarHeader(name='Cache-Control', value='max-age=0', comment=None), HarHeader(name='Connection', value='keep-alive', comment=None), HarHeader(name='Host', value='localhost:8000', comment=None), HarHeader(name='Sec-Fetch-Dest', value='document', comment=None), HarHeader(name='Sec-Fetch-Mode', value='navigate', comment=None), HarHeader(name='Sec-Fetch-Site', value='none', comment=None), HarHeader(name='Sec-Fetch-User', value='?1', comment=None), HarHeader(name='Upgrade-Insecure-Requests', value='1', comment=None), HarHeader(name='User-Agent', value='Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36', comment=None), HarHeader(name='sec-ch-ua', value='"Google Chrome";v="111", "Not(A:Brand";v="8", "Chromium";v="111"', comment=None), HarHeader(name='sec-ch-ua-mobile', value='?0', comment=None), HarHeader(name='sec-ch-ua-platform', value='"Linux"', comment=None)], query_string=[], post_data=None, headers_size=669, body_size=0, comment=None), response=HarResponse(status=200, status_text='OK', http_version='HTTP/1.0', cookies=[], headers=[HarHeader(name='Content-Length', value='934', comment=None), HarHeader(name='Content-type', value='text/html; charset=utf-8', comment=None), HarHeader(name='Date', value='Sun, 19 Mar 2023 06:36:15 GMT', comment=None), HarHeader(name='Server', value='SimpleHTTP/0.6 Python/3.10.10', comment=None)], content=HarContent(size=934, compression=0, mime_type=MimeType('text/html'), text='<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html>\n<head>\n</html>\n', encoding=None, comment=None), redirect_url='', headers_size=156, body_size=934, comment=None), cache=HarCache(before_request=None, after_request=None, comment=None), timings=HarTiming(blocked=Timing(2.073000000002765), dns=Timing(0.015000000000000013), connect=Timing(0.40700000000000003), send=Timing(0.16400000000000003), wait=Timing(1.6620000000111448), receive=Timing(0.7009999999922911), ssl=Timing(-1), comment=None), server_ip_address=IPv4Address('127.0.0.1'), connection='445', comment=None)], comment=None)
     """  # noqa: E501
     version: str
     creator: HarCreator

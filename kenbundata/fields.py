@@ -14,7 +14,7 @@ from datetime import datetime as _datetime
 from datetime import timezone as _timezone
 from enum import Enum
 from io import BytesIO
-from typing import Any, Generic, Optional, Type, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from dateutil.parser import parse as parse_datetime
@@ -28,6 +28,7 @@ from .utils import camelizer, decamelizer
 T = TypeVar("T")
 IdT = TypeVar("IdT", bound="Id")
 StrT = TypeVar("StrT", bound="BaseString")
+Number = Union[int, float]
 
 
 class BaseString(str):
@@ -383,6 +384,63 @@ class Timestamp(int):
         1674397764479000
         """
         return int(self)
+
+
+class Timing(float):
+    """
+    >>> from pydantic import TypeAdapter
+    >>> ta = TypeAdapter(Timing)
+    >>> ta.validate_python(6629)
+    Timing(6629)
+    >>> ta.validate_python(6629.0)
+    Timing(6629)
+    >>> ta.validate_python(6629.123)
+    Timing(6629.123)
+    >>> ta.validate_python("6629.123")
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-plain[validate()]
+      Value error, Cannot convert 6629.123 to <class 'kenbundata.fields.Timing'> [type=value_error, input_value='6629.123', input_type=str]
+     ...
+    """
+
+    def __new__(cls, value: Union[int, float]) -> "Timing":
+        if isinstance(value, int):
+            return super(Timing, cls).__new__(cls, float(value))
+        return super(Timing, cls).__new__(cls, value)
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls.validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
+        )
+
+    def __get_pydantic_json_schema__(self, _handler: GetJsonSchemaHandler) -> JsonSchemaValue:
+        return {"type": "number"}
+
+    @classmethod
+    def validate(cls, v: Any) -> "Timing":
+        if isinstance(v, cls):
+            return v
+        if isinstance(v, (int, float)):
+            return cls(v)
+        raise ValueError(f"Cannot convert {v} to {cls}")
+
+    def serialize(self) -> Number:
+        """
+        >>> Timing(6629).serialize()
+        6629
+        >>> Timing(6629.0).serialize()
+        6629
+        >>> Timing(6629.123).serialize()
+        6629.123
+        >>>
+        """
+        return int(self) if self.is_integer() else float(self)
+
+    def __repr__(self) -> str:
+        return f"Timing({super(Timing, self).__repr__() if not self.is_integer() else int(self)})"
 
 
 class MimeType(str):
