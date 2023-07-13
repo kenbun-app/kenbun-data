@@ -1,13 +1,13 @@
 from collections.abc import Iterable
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query, Session
 
-from ...fields import Cursor, Id
+from ...fields import Cursor, CursorValue, Id
 from ...types import Blob, Screenshot, TargetUrl
-from ..base import BaseCursorAwareStorage, IterableWithCursor
+from ..base import BaseCursorAwareStorage, IterableWithCursor, ListMetadata
 from ..exceptions import UrlNotFoundError
 from ..settings import BaseStorageSettings
 from . import models
@@ -74,7 +74,7 @@ class PostgresStorage(BaseCursorAwareStorage):
             query = sess.query(models.Url)
             invert = False
             if cursor:
-                if cursor.is_next:
+                if cursor.is_next():
                     query = query.order_by(models.Url.cursor_value.desc()).filter(
                         models.Url.cursor_value < cursor.value
                     )
@@ -85,29 +85,37 @@ class PostgresStorage(BaseCursorAwareStorage):
                 query = query.order_by(models.Url.cursor_value.desc())
             items = list(query.all()[:limit])
             if len(items) == 0:
-                return IterableWithCursor(items=[], metadata={"next_cursor": None, "prev_cursor": None})
+                return IterableWithCursor(items=[], metadata=ListMetadata(next_cursor=None, prev_cursor=None))
             if invert:
                 items.reverse()
             return IterableWithCursor(
-                items=items,
-                metadata={
-                    "next_cursor": self._url_get_next_cursor_if_exists(sess, query, items[-1]),
-                    "prev_cursor": self._url_get_prev_cursor_if_exists(sess, query, items[0]),
-                },
+                items=[TargetUrl.model_validate(d) for d in items],
+                metadata=ListMetadata(
+                    next_cursor=self._url_get_next_cursor_if_exists(sess, query, items[-1]),
+                    prev_cursor=self._url_get_prev_cursor_if_exists(sess, query, items[0]),
+                ),
             )
 
-    def _url_has_next(self, sess: Session, query: Query, url: models.Url) -> bool:
-        return sess.query(query.filter(models.Url.cursor_value < url.cursor_value).exists()).scalar()
+    def _url_has_next(self, sess: Session, query: Query[models.Url], url: models.Url) -> bool:
+        return cast(bool, sess.query(query.filter(models.Url.cursor_value < url.cursor_value).exists()).scalar())
 
-    def _url_has_prev(self, sess: Session, query: Query, url: models.Url) -> bool:
-        return sess.query(query.filter(models.Url.cursor_value > url.cursor_value).exists()).scalar()
+    def _url_has_prev(self, sess: Session, query: Query[models.Url], url: models.Url) -> bool:
+        return cast(bool, sess.query(query.filter(models.Url.cursor_value > url.cursor_value).exists()).scalar())
 
-    def _url_get_next_cursor_if_exists(self, sess: Session, query: Query, url: models.Url) -> Union[Cursor, None]:
+    def _url_get_next_cursor_if_exists(
+        self, sess: Session, query: Query[models.Url], url: models.Url
+    ) -> Union[Cursor, None]:
         return (
-            Cursor.from_value(url.cursor_value, Cursor.Direction.NEXT) if self._url_has_next(sess, query, url) else None
+            Cursor.from_value(CursorValue(cast(str, url.cursor_value)), Cursor.Direction.NEXT)
+            if self._url_has_next(sess, query, url)
+            else None
         )
 
-    def _url_get_prev_cursor_if_exists(self, sess: Session, query: Query, url: models.Url) -> Union[Cursor, None]:
+    def _url_get_prev_cursor_if_exists(
+        self, sess: Session, query: Query[models.Url], url: models.Url
+    ) -> Union[Cursor, None]:
         return (
-            Cursor.from_value(url.cursor_value, Cursor.Direction.PREV) if self._url_has_next(sess, query, url) else None
+            Cursor.from_value(CursorValue(cast(str, url.cursor_value)), Cursor.Direction.PREV)
+            if self._url_has_next(sess, query, url)
+            else None
         )

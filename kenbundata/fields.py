@@ -622,10 +622,6 @@ class EncodedImage(str):
         return self._image
 
     @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], "EncodedImage"], None, None]:
-        yield cls._validate_image_can_be_loaded
-
-    @classmethod
     def validate(cls, v: Any) -> "EncodedImage":
         if isinstance(v, Image.Image):
             v = cls.from_image(v)

@@ -11,7 +11,7 @@ class PostgresStorageSettings(BaseStorageSettings):
     port: int = 5432
     database: str = 'postgres'
 
-    @computed_field
+    @computed_field  # type: ignore[misc]
     @property
     def sqlalchemy_database_url(self) -> PostgresDsn:
         return PostgresDsn(
