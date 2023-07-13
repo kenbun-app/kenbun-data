@@ -1,3 +1,5 @@
+from pydantic_core import MultiHostUrl
+
 from kenbundata.settings import GlobalSettings, StorageType
 from kenbundata.storage.postgres.settings import PostgresStorageSettings
 
@@ -15,7 +17,9 @@ def test_postgres_storage_settings() -> None:
     assert sut.database == "kenbun"
     assert sut.username == "kenbunadmin"
     assert sut.password == "superStr0ngPassw0rd"
-    assert sut.sqlalchemy_database_url == "postgresql://kenbunadmin:superStr0ngPassw0rd@localhost:5432/kenbun"
+    assert sut.sqlalchemy_database_url == MultiHostUrl(
+        "postgresql://kenbunadmin:superStr0ngPassw0rd@localhost:5432/kenbun"
+    )
 
 
 def test_postgres_storage_settings_from_global_settings() -> None:
@@ -36,7 +40,9 @@ def test_postgres_storage_settings_from_global_settings() -> None:
     assert sut.database == "kenbundb"
     assert sut.username == "adminuser"
     assert sut.password == "str0ngPassw0rd"
-    assert sut.sqlalchemy_database_url == "postgresql://adminuser:str0ngPassw0rd@thedatabase:54320/kenbundb"
+    assert sut.sqlalchemy_database_url == MultiHostUrl(
+        "postgresql://adminuser:str0ngPassw0rd@thedatabase:54320/kenbundb"
+    )
 
 
 def test_postgres_storage_settings_from_global_settings_default() -> None:
@@ -51,4 +57,4 @@ def test_postgres_storage_settings_from_global_settings_default() -> None:
     assert sut.database == "postgres"
     assert sut.username == "postgres"
     assert sut.password == "somepassword"
-    assert sut.sqlalchemy_database_url == "postgresql://postgres:somepassword@db:5432/postgres"
+    assert sut.sqlalchemy_database_url == MultiHostUrl("postgresql://postgres:somepassword@db:5432/postgres")

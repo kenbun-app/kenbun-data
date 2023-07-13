@@ -41,7 +41,7 @@ class BaseModel(PydanticBaseModel):
     {'properties': {'id': {'format': 'base64EncodedUuid', 'title': 'Id', 'type': 'string'}, 'objectName': {'title': 'Objectname', 'type': 'string'}, 'createdAt': {'format': 'timestamp', 'title': 'Createdat', 'type': 'integer'}}, 'required': ['objectName'], 'title': 'DerivedModel', 'type': 'object'}
     """  # noqa: E501
 
-    model_config = ConfigDict(populate_by_name=True, alias_generator=camelizer)
+    model_config = ConfigDict(populate_by_name=True, alias_generator=camelizer, from_attributes=True)
 
     def model_dump_json(
         self,

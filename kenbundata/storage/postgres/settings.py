@@ -1,7 +1,4 @@
-from collections.abc import Mapping
-from typing import Optional, cast
-
-from pydantic import PostgresDsn, validator
+from pydantic import PostgresDsn, computed_field
 
 from ...settings import GlobalSettings
 from ..settings import BaseStorageSettings
@@ -13,22 +10,12 @@ class PostgresStorageSettings(BaseStorageSettings):
     password: str
     port: int = 5432
     database: str = 'postgres'
-    sqlalchemy_database_url: Optional[PostgresDsn] = None
 
-    @validator("sqlalchemy_database_url", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Mapping[str, str]) -> str:
-        if isinstance(v, str):
-            return v
-        return cast(
-            str,
-            PostgresDsn(
-                scheme="postgresql",
-                user=values.get("username"),
-                password=values.get("password"),
-                host=values.get("host"),
-                port=str(values.get('port')),
-                path=f"/{values.get('database') or ''}",
-            ),
+    @computed_field
+    @property
+    def sqlalchemy_database_url(self) -> PostgresDsn:
+        return PostgresDsn(
+            url=f"postgresql://{self.username}:{self.password.replace('@', '%40')}@{self.host}:{self.port}/{self.database}"
         )
 
     @classmethod

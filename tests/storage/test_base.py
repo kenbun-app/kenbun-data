@@ -1,5 +1,4 @@
 from collections.abc import Iterable, MutableMapping
-from typing import cast
 
 import pytest
 from pydantic import AnyHttpUrl
@@ -21,7 +20,7 @@ class ConcreteStorage(BaseStorage):
     def __init__(self) -> None:
         self._urls: MutableMapping[Id, TargetUrl] = {
             Id("T3HW7dZ5SjCtODQLQkY8eA"): TargetUrl(
-                id=Id("T3HW7dZ5SjCtODQLQkY8eA"), url=cast(AnyHttpUrl, "https://kenbun.app")
+                id=Id("T3HW7dZ5SjCtODQLQkY8eA"), url=AnyHttpUrl("https://kenbun.app")
             )
         }
         self._blobs: MutableMapping[Id, Blob] = {
@@ -69,7 +68,7 @@ class ConcreteStorage(BaseStorage):
 
 def test_get_url_by_id() -> None:
     id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
-    expected = TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    expected = TargetUrl(id=id_, url=AnyHttpUrl("https://kenbun.app"))
     sut = ConcreteStorage()
     actual = sut.get_url_by_id(id_)
     assert actual == expected
@@ -84,7 +83,7 @@ def test_get_url_by_id_raises_url_not_found_error() -> None:
 
 def test_store_url() -> None:
     id_ = Id("Xia5PlGDRDCGwaalhXqdww")
-    url = TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))
+    url = TargetUrl(id=id_, url=AnyHttpUrl("https://kenbun.app"))
     sut = ConcreteStorage()
     sut.store_url(url)
     actual = sut.get_url_by_id(id_)
@@ -93,7 +92,7 @@ def test_store_url() -> None:
 
 def test_list_urls() -> None:
     id_ = Id("T3HW7dZ5SjCtODQLQkY8eA")
-    expected = [TargetUrl(id=id_, url=cast(AnyHttpUrl, "https://kenbun.app"))]
+    expected = [TargetUrl(id=id_, url=AnyHttpUrl("https://kenbun.app"))]
     sut = ConcreteStorage()
     actual = list(sut.list_urls())
     assert actual == expected

@@ -30,7 +30,9 @@ def format_cursor_value(context: DefaultExecutionContext) -> str:
     params = context.current_parameters
     if params is None:
         raise ValueError("No parameters")
-    return str(CursorValue.from_timestamp_and_id(Timestamp(params['updated_at']), Id(params['id'])))
+    return str(
+        CursorValue.from_timestamp_and_id(Timestamp(params['updated_at']), Id(params.get('id', params.get('url_id'))))
+    )
 
 
 class Url(Base):

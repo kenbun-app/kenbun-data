@@ -1,9 +1,9 @@
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Union
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Query, Session
 
 from ...fields import Cursor, Id
 from ...types import Blob, Screenshot, TargetUrl
@@ -37,7 +37,7 @@ class PostgresStorage(BaseCursorAwareStorage):
             raise TypeError(f"Expected settings to be PostgresStorageSettings, got {type(settings)}")
         if not settings.sqlalchemy_database_url:
             raise ValueError("SQLAlchemy database URL is not set")
-        return cls(postgres_dsn=settings.sqlalchemy_database_url)
+        return cls(postgres_dsn=settings.sqlalchemy_database_url.unicode_string())
 
     def get_url_by_id(self, id: Id) -> TargetUrl:
         with self.session as sess:
@@ -48,7 +48,7 @@ class PostgresStorage(BaseCursorAwareStorage):
 
     def store_url(self, url: TargetUrl) -> None:
         with self.session as sess:
-            obj = models.Url(id=url.id.uuid, url=url.url)
+            obj = models.Url(id=url.id.uuid, url=url.url.unicode_string())
             sess.merge(obj)
             sess.commit()
 
@@ -69,5 +69,45 @@ class PostgresStorage(BaseCursorAwareStorage):
     def store_screenshot(self, screenshot: Screenshot) -> None:
         raise NotImplementedError()
 
-    def list_urls_with_cursor(self, limit: int, cursor: Optional[Cursor]) -> IterableWithCursor[TargetUrl]:
-        ...
+    def list_urls_with_cursor(self, cursor: Optional[Cursor] = None, limit: int = 10) -> IterableWithCursor[TargetUrl]:
+        with self.session as sess:
+            query = sess.query(models.Url)
+            invert = False
+            if cursor:
+                if cursor.is_next:
+                    query = query.order_by(models.Url.cursor_value.desc()).filter(
+                        models.Url.cursor_value < cursor.value
+                    )
+                else:
+                    query = query.order_by(models.Url.cursor_value.asc()).filter(models.Url.cursor_value > cursor.value)
+                    invert = True
+            else:
+                query = query.order_by(models.Url.cursor_value.desc())
+            items = list(query.all()[:limit])
+            if len(items) == 0:
+                return IterableWithCursor(items=[], metadata={"next_cursor": None, "prev_cursor": None})
+            if invert:
+                items.reverse()
+            return IterableWithCursor(
+                items=items,
+                metadata={
+                    "next_cursor": self._url_get_next_cursor_if_exists(sess, query, items[-1]),
+                    "prev_cursor": self._url_get_prev_cursor_if_exists(sess, query, items[0]),
+                },
+            )
+
+    def _url_has_next(self, sess: Session, query: Query, url: models.Url) -> bool:
+        return sess.query(query.filter(models.Url.cursor_value < url.cursor_value).exists()).scalar()
+
+    def _url_has_prev(self, sess: Session, query: Query, url: models.Url) -> bool:
+        return sess.query(query.filter(models.Url.cursor_value > url.cursor_value).exists()).scalar()
+
+    def _url_get_next_cursor_if_exists(self, sess: Session, query: Query, url: models.Url) -> Union[Cursor, None]:
+        return (
+            Cursor.from_value(url.cursor_value, Cursor.Direction.NEXT) if self._url_has_next(sess, query, url) else None
+        )
+
+    def _url_get_prev_cursor_if_exists(self, sess: Session, query: Query, url: models.Url) -> Union[Cursor, None]:
+        return (
+            Cursor.from_value(url.cursor_value, Cursor.Direction.PREV) if self._url_has_next(sess, query, url) else None
+        )

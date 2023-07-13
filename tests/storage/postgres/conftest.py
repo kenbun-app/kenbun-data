@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from datetime import datetime, timedelta
-from typing import List, cast
+from typing import List
 
 import pytest
 from freezegun import freeze_time
@@ -22,7 +22,7 @@ TEST_DATABASE_NAME = "test"
 def create_engine_from_settings(settings: PostgresStorageSettings) -> Engine:
     if not settings.sqlalchemy_database_url:
         raise ValueError("SQLAlchemy database URL is not set")
-    return create_engine(settings.sqlalchemy_database_url)
+    return create_engine(settings.sqlalchemy_database_url.unicode_string())
 
 
 @pytest.fixture(scope="session")
@@ -111,8 +111,8 @@ def urls_fixture(
         )
         session.commit()
     yield [
-        TargetUrl(id=url_ids[0], url=cast(AnyHttpUrl, "https://osoken.ai")),
-        TargetUrl(id=url_ids[1], url=cast(AnyHttpUrl, "https://kenbun.app")),
+        TargetUrl(id=url_ids[0], url=AnyHttpUrl("https://osoken.ai")),
+        TargetUrl(id=url_ids[1], url=AnyHttpUrl("https://kenbun.app")),
     ]
     engine.dispose()
 
@@ -126,9 +126,16 @@ def many_url_ids_fixture(
     with Session(engine) as session, freeze_time(datetime(2021, 1, 1, 0, 0, 0)) as frozen_datetime:
         session.query(models.Url).delete()
         for i in range(32):
-            id_ = Id.generate()
-            ids.append(id_)
-            session.add(models.Url(id=id_.uuid, url=f"https://osoken{i}.ai"))
+            obj = TargetUrl(url=AnyHttpUrl(f"https://osoken{i}.ai"))
+            ids.append(obj.id)
+            session.add(
+                models.Url(
+                    id=obj.id.uuid,
+                    url=obj.url.unicode_string(),
+                    created_at=frozen_datetime.time_to_freeze,
+                    updated_at=frozen_datetime.time_to_freeze,
+                )
+            )
             frozen_datetime.tick(delta=timedelta(minutes=1 + i))
         session.commit()
     yield ids

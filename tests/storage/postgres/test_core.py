@@ -1,4 +1,4 @@
-from typing import List, cast
+from typing import List
 
 import pytest
 from pydantic import AnyHttpUrl
@@ -26,23 +26,23 @@ def test_get_url_by_id_raises_url_not_found_error(postgres_storage_fixture: Post
 
 
 def test_store_url(postgres_storage_fixture: PostgresStorage, engine_for_test: Engine) -> None:
-    url = TargetUrl(id=Id("00000000-0000-0000-0000-000000000000"), url=cast(AnyHttpUrl, "https://example.com"))
+    url = TargetUrl(id=Id("00000000-0000-0000-0000-000000000000"), url=AnyHttpUrl("https://example.com"))
     postgres_storage_fixture.store_url(url)
     with Session(engine_for_test) as sess:
         actual = sess.query(models.Url).get(url.id.uuid)
         assert actual is not None
-        assert actual.url == url.url
+        assert actual.url == url.url.unicode_string()
 
 
 def test_store_url_update(
     postgres_storage_fixture: PostgresStorage, engine_for_test: Engine, url_ids: List[Id]
 ) -> None:
-    url = TargetUrl(id=url_ids[0], url=cast(AnyHttpUrl, "https://otherexample.com"))
+    url = TargetUrl(id=url_ids[0], url=AnyHttpUrl("https://otherexample.com"))
     postgres_storage_fixture.store_url(url)
     with Session(engine_for_test) as sess:
         actual = sess.query(models.Url).get(url.id.uuid)
         assert actual is not None
-        assert actual.url == url.url
+        assert actual.url == url.url.unicode_string()
 
 
 def test_list_urls(postgres_storage_fixture: PostgresStorage, urls_fixture: List[TargetUrl]) -> None:
@@ -50,7 +50,9 @@ def test_list_urls(postgres_storage_fixture: PostgresStorage, urls_fixture: List
     assert actual == urls_fixture
 
 
-def test_list_urls_with_cursor(postgres_storage_fixture: PostgresStorage, many_url_ids_fixture: List[Id]) -> None:
+def test_list_urls_with_cursor_default(
+    postgres_storage_fixture: PostgresStorage, many_url_ids_fixture: List[Id]
+) -> None:
     buf = postgres_storage_fixture.list_urls_with_cursor()
     actual = list(buf.items)
     while buf.metadata.next_cursor is not None:
