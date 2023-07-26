@@ -17,12 +17,12 @@ from typing import Any, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from dateutil.parser import parse as parse_datetime
+from jittok.jptext import normalize as normalize_jptext
 from PIL import Image
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
+from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler, TypeAdapter
+from pydantic.alias_generators import to_camel, to_snake
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
-
-from .utils import camelizer, decamelizer
 
 T = TypeVar("T")
 IdT = TypeVar("IdT", bound="Id")
@@ -34,13 +34,38 @@ class BaseString(str):
     """
     >>> BaseString("test")
     BaseString('test')
+    >>> str(BaseString("test"))
+    'test'
+    >>> ta = TypeAdapter(BaseString)
+    >>> ta.validate_python("test")
+    BaseString('test')
+    >>> ta.validate_python(1)
+    Traceback (most recent call last):
+     ...
+    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), str]
+      Input should be a valid string [type=string_type, input_value=1, input_type=int]
+     ...
+    >>> ta.dump_json(BaseString("test_test"))
+    b'"test_test"'
+    >>> BaseString.from_str("test")
+    BaseString('test')
+    >>> ta.validate_python(BaseString.from_str("test"))
+    BaseString('test')
+    >>> hash(BaseString("test")) == hash("test")
+    True
+    >>> ta.validate_python("test　test")
+    BaseString('test　test')
     """
+
+    @classmethod
+    def _proc_str(cls, s: str) -> str:
+        return s
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({super().__repr__()})"
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({super().__repr__()})"
+        return super(BaseString, self).__str__()
 
     @classmethod
     def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
@@ -52,76 +77,57 @@ class BaseString(str):
 
     @classmethod
     def validate(cls: Type[StrT], v: Any) -> StrT:
-        return cls(v)
+        return cls(cls._proc_str(v))
 
     def serialize(self) -> str:
         return str(self)
 
     @classmethod
     def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
-        return {"strip_whitespace": True}
+        return {}
 
     def __hash__(self) -> int:
         return super(BaseString, self).__hash__()
 
+    @classmethod
+    def from_str(cls: Type[StrT], v: str) -> StrT:
+        return TypeAdapter(cls).validate_python(v)
 
-class PySnakeSerCamelStr(BaseString):
+
+class NormalizedString(BaseString):
     """
-    >>> PySnakeSerCamelStr("test")
-    PySnakeSerCamelStr('test')
-    >>> from pydantic import TypeAdapter
-    >>> ta = TypeAdapter(PySnakeSerCamelStr)
-    >>> ta.validate_python("test")
-    PySnakeSerCamelStr('test')
-    >>> ta.validate_python("test_test")
-    PySnakeSerCamelStr('test_test')
-    >>> ta.validate_python("testTest")
-    PySnakeSerCamelStr('test_test')
-    >>> ta.dump_json("test_test")
-    b'"testTest"'
-    >>> PySnakeSerCamelStr("test_test") == "testTest"
-    True
-    >>> PySnakeSerCamelStr("test_test") == 123
-    False
-    >>> PySnakeSerCamelStr("test_test") == b"testTest"
-    False
+    >>> ta = TypeAdapter(NormalizedString)
+    >>> ta.validate_python("test　test")
+    NormalizedString('test test')
     """
 
     @classmethod
-    def __get_pydantic_core_schema__(cls, _source_type: Any, _handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            cls.validate,
-            core_schema.str_schema(**cls.__get_extra_constraint_dict__()),
-            serialization=core_schema.plain_serializer_function_ser_schema(cls.serialize, when_used="json"),
-        )
+    def _proc_str(cls, s: str) -> str:
+        return normalize_jptext(s, remove_variation_selectors=True)
+
+
+class TrimmedNormalizedString(NormalizedString):
+    """
+    >>> ta = TypeAdapter(TrimmedNormalizedString)
+    >>> ta.validate_python("  test　test ")
+    TrimmedNormalizedString('test test')
+    """
 
     @classmethod
-    def validate(cls: Type[StrT], v: Any) -> StrT:
-        return cls(decamelizer(str(v)))
-
-    def serialize(self) -> str:
-        return camelizer(self)
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, str):
-            return False
-        return super().__eq__(decamelizer(other))
-
-    def __hash__(self) -> int:
-        return super(PySnakeSerCamelStr, self).__hash__()
+    def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
+        return dict(super().__get_extra_constraint_dict__(), strip_whitespace=True)
 
 
-class NonEmptyString(BaseString):
+class NonEmptyTrimmedNormalizedString(TrimmedNormalizedString):
     """
-    >>> from pydantic import TypeAdapter
-    >>> ta = TypeAdapter(NonEmptyString)
-    >>> ta.validate_python("test")
-    NonEmptyString('test')
-    >>> ta.validate_python("")
+    >>> ta = TypeAdapter(NonEmptyTrimmedNormalizedString)
+    >>> ta.validate_python("  test　test ")
+    NonEmptyTrimmedNormalizedString('test test')
+    >>> ta.validate_python("  ")
     Traceback (most recent call last):
      ...
     pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
-      String should have at least 1 characters [type=string_too_short, input_value='', input_type=str]
+      String should have at least 1 characters [type=string_too_short, input_value='  ', input_type=str]
      ...
     """
 
@@ -130,29 +136,81 @@ class NonEmptyString(BaseString):
         return dict(super().__get_extra_constraint_dict__(), min_length=1)
 
 
-class NonEmptyShortString(NonEmptyString):
+class NonEmptyTrimmedUnderscoredNormalizedString(NonEmptyTrimmedNormalizedString):
     """
-    >>> from pydantic import TypeAdapter
-    >>> ta = TypeAdapter(NonEmptyShortString)
-    >>> ta.validate_python("test")
-    NonEmptyShortString('test')
-    >>> ta.validate_python("")
-    Traceback (most recent call last):
-     ...
-    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
-      String should have at least 1 characters [type=string_too_short, input_value='', input_type=str]
-     ...
-    >>> ta.validate_python("a" * 256)
-    Traceback (most recent call last):
-     ...
-    pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
-      String should have at most 255 characters [type=string_too_long, input_value='aaaaaaaaaaaaaaaaaaaaaaaa...aaaaaaaaaaaaaaaaaaaaaaa', input_type=str]
-     ...
-    """  # noqa: E501
+    >>> ta = TypeAdapter(NonEmptyTrimmedUnderscoredNormalizedString)
+    >>> ta.validate_python("  test　test ")
+    NonEmptyTrimmedUnderscoredNormalizedString('test_test')
+    """
 
     @classmethod
-    def __get_extra_constraint_dict__(cls) -> dict[str, Any]:
-        return dict(super().__get_extra_constraint_dict__(), max_length=255)
+    def _proc_str(cls, s: str) -> str:
+        return super()._proc_str(s).replace(" ", "_")
+
+
+class SnakeCasedString(NonEmptyTrimmedUnderscoredNormalizedString):
+    """
+    >>> ta = TypeAdapter(SnakeCasedString)
+    >>> ta.validate_python("  test　test ")
+    SnakeCasedString('test_test')
+    >>> ta.validate_python("  TEST　Test ")
+    SnakeCasedString('test_test')
+    """
+
+    @classmethod
+    def _proc_str(cls, s: str) -> str:
+        return to_snake(super()._proc_str(s))
+
+    def __eq__(self, __value: object) -> bool:
+        """
+        >>> SnakeCasedString.from_str("test_test") == "test_test"
+        True
+        >>> SnakeCasedString.from_str("test_test") == "testTest"
+        True
+        >>> SnakeCasedString.from_str("test_test") == SnakeCasedString.from_str("testTest")
+        True
+        """
+        if isinstance(__value, SnakeCasedString):
+            return super(SnakeCasedString, self).__eq__(__value)
+        if isinstance(__value, str):
+            return super(SnakeCasedString, self).__eq__(SnakeCasedString.from_str(__value))
+        return False
+
+    def __hash__(self) -> int:
+        return super(SnakeCasedString, self).__hash__()
+
+
+class SnakeCaseInPythonCamelCaseInJsonString(SnakeCasedString):
+    """
+    >>> ta = TypeAdapter(SnakeCaseInPythonCamelCaseInJsonString)
+    >>> ta.validate_python("  test　test ")
+    SnakeCaseInPythonCamelCaseInJsonString('test_test')
+    >>> ta.validate_python("  TEST　Test ")
+    SnakeCaseInPythonCamelCaseInJsonString('test_test')
+    >>> ta.dump_json(SnakeCaseInPythonCamelCaseInJsonString("test_test"))
+    b'"testTest"'
+    >>> s = ta.validate_python("test_test")
+    >>> s == "testTest"
+    True
+    """
+
+    def serialize(self) -> str:
+        return to_camel(super().serialize())
+
+
+class TypeValueString(SnakeCaseInPythonCamelCaseInJsonString):
+    """
+    >>> ta = TypeAdapter(TypeValueString)
+    >>> ta.validate_python("plain_text")
+    TypeValueString('plain_text')
+    >>> ta.validate_python("plainText")
+    TypeValueString('plain_text')
+    >>> ta.dump_json(TypeValueString("plain_text"))
+    b'"plainText"'
+    """
+
+    def serialize(self) -> str:
+        return super().serialize()
 
 
 class Id(UUID):
