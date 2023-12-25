@@ -6,12 +6,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query, Session
 
 from ...fields import Cursor, CursorValue, Id
+from ...settings import BaseStorageSettings, PostgresStorageSettings
 from ...types import Blob, Screenshot, TargetUrl
 from ..base import BaseCursorAwareStorage, IterableWithCursor, ListMetadata
 from ..exceptions import UrlNotFoundError
-from ..settings import BaseStorageSettings
 from . import models
-from .settings import PostgresStorageSettings
 
 
 class PostgresStorage(BaseCursorAwareStorage):
@@ -97,10 +96,16 @@ class PostgresStorage(BaseCursorAwareStorage):
             )
 
     def _url_has_next(self, sess: Session, query: Query[models.Url], url: models.Url) -> bool:
-        return cast(bool, sess.query(query.filter(models.Url.cursor_value < url.cursor_value).exists()).scalar())
+        return cast(
+            bool,
+            sess.query(query.filter(models.Url.cursor_value < url.cursor_value).exists()).scalar(),
+        )
 
     def _url_has_prev(self, sess: Session, query: Query[models.Url], url: models.Url) -> bool:
-        return cast(bool, sess.query(query.filter(models.Url.cursor_value > url.cursor_value).exists()).scalar())
+        return cast(
+            bool,
+            sess.query(query.filter(models.Url.cursor_value > url.cursor_value).exists()).scalar(),
+        )
 
     def _url_get_next_cursor_if_exists(
         self, sess: Session, query: Query[models.Url], url: models.Url

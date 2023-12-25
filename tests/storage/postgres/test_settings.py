@@ -1,7 +1,6 @@
 from pydantic_core import MultiHostUrl
 
-from kenbundata.settings import GlobalSettings, StorageType
-from kenbundata.storage.postgres.settings import PostgresStorageSettings
+from kenbundata.settings import GlobalSettings, PostgresStorageSettings, StorageType
 
 
 def test_postgres_storage_settings() -> None:
@@ -23,18 +22,16 @@ def test_postgres_storage_settings() -> None:
 
 
 def test_postgres_storage_settings_from_global_settings() -> None:
-    sut = PostgresStorageSettings.from_global_settings(
-        GlobalSettings(
-            storage_type=StorageType.POSTGRES,
-            storage_settings={
-                "host": "thedatabase",
-                "username": "adminuser",
-                "password": "str0ngPassw0rd",
-                "port": 54320,
-                "database": "kenbundb",
-            },
-        )
-    )
+    sut = GlobalSettings(
+        storage_settings={
+            "storage_type": StorageType.POSTGRES,
+            "host": "thedatabase",
+            "username": "adminuser",
+            "password": "str0ngPassw0rd",
+            "port": 54320,
+            "database": "kenbundb",
+        },
+    ).storage_settings
     assert sut.host == "thedatabase"
     assert sut.port == 54320
     assert sut.database == "kenbundb"
@@ -46,12 +43,12 @@ def test_postgres_storage_settings_from_global_settings() -> None:
 
 
 def test_postgres_storage_settings_from_global_settings_default() -> None:
-    sut = PostgresStorageSettings.from_global_settings(
-        GlobalSettings(
-            storage_type=StorageType.POSTGRES,
-            storage_settings={"password": "somepassword"},
-        )
-    )
+    sut = GlobalSettings(
+        storage_settings={
+            "storage_type": StorageType.POSTGRES,
+            "password": "somepassword",
+        },
+    ).storage_settings
     assert sut.host == "db"
     assert sut.port == 5432
     assert sut.database == "postgres"

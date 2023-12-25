@@ -1,5 +1,4 @@
-from kenbundata.settings import GlobalSettings, StorageType
-from kenbundata.storage.local.settings import LocalStorageSettings
+from kenbundata.settings import GlobalSettings, LocalStorageSettings, StorageType
 
 
 def test_local_storage_settings() -> None:
@@ -8,7 +7,6 @@ def test_local_storage_settings() -> None:
 
 
 def test_local_storage_settings_from_global_settings() -> None:
-    sut = LocalStorageSettings.from_global_settings(
-        GlobalSettings(storage_type=StorageType.LOCAL, storage_settings={"path": "/tmp"})
-    )
+    sut = GlobalSettings(storage_settings={"storage_type": StorageType.LOCAL_FILE, "path": "/tmp"}).storage_settings
+
     assert sut.path == "/tmp"

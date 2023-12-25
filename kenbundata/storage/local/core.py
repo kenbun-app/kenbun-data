@@ -2,11 +2,10 @@ import os
 from collections.abc import Iterable
 
 from ...fields import Id
+from ...settings import BaseStorageSettings, LocalStorageSettings
 from ...types import Blob, Screenshot, TargetUrl
 from ..base import BaseStorage
 from ..exceptions import BlobNotFoundError, ScreenshotNotFoundError, UrlNotFoundError
-from ..settings import BaseStorageSettings
-from .settings import LocalStorageSettings
 
 
 class LocalStorage(BaseStorage):
@@ -63,5 +62,9 @@ class LocalStorage(BaseStorage):
     def store_screenshot(self, screenshot: Screenshot) -> None:
         if not os.path.exists(os.path.join(self.path, "screenshots")):
             os.makedirs(os.path.join(self.path, "screenshots"))
-        with open(os.path.join(self.path, "screenshots", f"{screenshot.id}.json"), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(self.path, "screenshots", f"{screenshot.id}.json"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write(screenshot.model_dump_json())

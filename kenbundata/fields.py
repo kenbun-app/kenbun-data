@@ -127,7 +127,7 @@ class NonEmptyTrimmedNormalizedString(TrimmedNormalizedString):
     Traceback (most recent call last):
      ...
     pydantic_core._pydantic_core.ValidationError: 1 validation error for function-after[validate(), constrained-str]
-      String should have at least 1 characters [type=string_too_short, input_value='  ', input_type=str]
+      String should have at least 1 character [type=string_too_short, input_value='  ', input_type=str]
      ...
     """
 
@@ -719,7 +719,9 @@ class CursorValue(str):
             raise ValueError(f"Invalid cursor value: {value}")
 
     @classmethod
-    def __get_validators__(cls) -> Generator[Callable[[Any], "CursorValue"], None, None]:
+    def __get_validators__(
+        cls,
+    ) -> Generator[Callable[[Any], "CursorValue"], None, None]:
         yield cls.validate
 
     @classmethod

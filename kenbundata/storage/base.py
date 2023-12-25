@@ -3,8 +3,8 @@ from collections.abc import Iterable
 from typing import Generic, Optional, Type, TypeVar
 
 from ..fields import Cursor, Id
+from ..settings import BaseStorageSettings
 from ..types import BaseEntity, BaseModel, Blob, Screenshot, TargetUrl
-from .settings import BaseStorageSettings
 
 T = TypeVar("T", bound="BaseStorage")
 

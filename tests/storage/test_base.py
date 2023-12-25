@@ -4,13 +4,13 @@ import pytest
 from pydantic import AnyHttpUrl
 
 from kenbundata.fields import Bytes, EncodedImage, Id, MimeType
+from kenbundata.settings import BaseStorageSettings
 from kenbundata.storage.base import BaseStorage
 from kenbundata.storage.exceptions import (
     BlobNotFoundError,
     ScreenshotNotFoundError,
     UrlNotFoundError,
 )
-from kenbundata.storage.settings import BaseStorageSettings
 from kenbundata.types import Blob, Screenshot, TargetUrl
 
 _image_str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC"
@@ -25,12 +25,14 @@ class ConcreteStorage(BaseStorage):
         }
         self._blobs: MutableMapping[Id, Blob] = {
             Id("8bbz-1tVSGqlVU7_zvomqg"): Blob(
-                id=Id('8bbz-1tVSGqlVU7_zvomqg'), data=Bytes(b'aaa'), mime_type=MimeType("text/plain")
+                id=Id("8bbz-1tVSGqlVU7_zvomqg"),
+                data=Bytes(b"aaa"),
+                mime_type=MimeType("text/plain"),
             )
         }
         self._screenshots: MutableMapping[Id, Screenshot] = {
             Id("80pExMLSTDS-VCLOIK4_Pg"): Screenshot(
-                id=Id('80pExMLSTDS-VCLOIK4_Pg'), encoded_image=EncodedImage(_image_str)
+                id=Id("80pExMLSTDS-VCLOIK4_Pg"), encoded_image=EncodedImage(_image_str)
             )
         }
 
@@ -100,7 +102,7 @@ def test_list_urls() -> None:
 
 def test_get_blob_by_id() -> None:
     id_ = Id("8bbz-1tVSGqlVU7_zvomqg")
-    expected = Blob(id=id_, data=Bytes(b'aaa'), mime_type=MimeType("text/plain"))
+    expected = Blob(id=id_, data=Bytes(b"aaa"), mime_type=MimeType("text/plain"))
     sut = ConcreteStorage()
     actual = sut.get_blob_by_id(id_)
     assert actual == expected
@@ -108,7 +110,11 @@ def test_get_blob_by_id() -> None:
 
 def test_store_blob() -> None:
     id_ = Id("ltv5IY6LTpmIIf1QWeGNGw")
-    blob = Blob(id=Id('ltv5IY6LTpmIIf1QWeGNGw'), data=Bytes(b'bbb'), mime_type=MimeType("text/plain"))
+    blob = Blob(
+        id=Id("ltv5IY6LTpmIIf1QWeGNGw"),
+        data=Bytes(b"bbb"),
+        mime_type=MimeType("text/plain"),
+    )
     sut = ConcreteStorage()
     sut.store_blob(blob)
     actual = sut.get_blob_by_id(id_)

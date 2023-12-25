@@ -11,9 +11,9 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from kenbundata.fields import Id
+from kenbundata.settings import PostgresStorageSettings
 from kenbundata.storage.postgres import models
 from kenbundata.storage.postgres.core import PostgresStorage
-from kenbundata.storage.postgres.settings import PostgresStorageSettings
 from kenbundata.types import TargetUrl
 
 TEST_DATABASE_NAME = "test"
@@ -28,7 +28,11 @@ def create_engine_from_settings(settings: PostgresStorageSettings) -> Engine:
 @pytest.fixture(scope="session")
 def settings_for_default() -> Generator[PostgresStorageSettings, None, None]:
     settings = PostgresStorageSettings(
-        host="127.0.0.1", port=5432, username="postgres", password="postgres", database="postgres"
+        host="127.0.0.1",
+        port=5432,
+        username="postgres",
+        password="postgres",
+        database="postgres",
     )
     yield settings
 
@@ -36,13 +40,19 @@ def settings_for_default() -> Generator[PostgresStorageSettings, None, None]:
 @pytest.fixture(scope="session")
 def settings_for_test() -> Generator[PostgresStorageSettings, None, None]:
     settings = PostgresStorageSettings(
-        host="127.0.0.1", port=5432, username="postgres", password="postgres", database=TEST_DATABASE_NAME
+        host="127.0.0.1",
+        port=5432,
+        username="postgres",
+        password="postgres",
+        database=TEST_DATABASE_NAME,
     )
     yield settings
 
 
 @pytest.fixture(scope="session")
-def db_for_test(settings_for_default: PostgresStorageSettings) -> Generator[int, None, None]:
+def db_for_test(
+    settings_for_default: PostgresStorageSettings,
+) -> Generator[int, None, None]:
     engine = create_engine_from_settings(settings_for_default)
     conn = engine.connect()
     conn.execute(text("commit"))
@@ -98,7 +108,9 @@ def url_ids() -> Generator[List[Id], None, None]:
 
 @pytest.fixture(scope="function")
 def urls_fixture(
-    postgres_storage_fixture: PostgresStorage, settings_for_test: PostgresStorageSettings, url_ids: List[Id]
+    postgres_storage_fixture: PostgresStorage,
+    settings_for_test: PostgresStorageSettings,
+    url_ids: List[Id],
 ) -> Generator[List[TargetUrl], None, None]:
     engine = create_engine_from_settings(settings_for_test)
     with Session(engine) as session:
@@ -119,7 +131,8 @@ def urls_fixture(
 
 @pytest.fixture(scope="function")
 def many_url_ids_fixture(
-    postgres_storage_fixture: PostgresStorage, settings_for_test: PostgresStorageSettings
+    postgres_storage_fixture: PostgresStorage,
+    settings_for_test: PostgresStorageSettings,
 ) -> Generator[List[Id], None, None]:
     engine = create_engine_from_settings(settings_for_test)
     ids = []
